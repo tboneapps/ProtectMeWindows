@@ -200,23 +200,34 @@ public sealed class ProcessBlockerWorker : BackgroundService
 
     private bool? _lastSafeBrowsingPolicy;
     private bool? _lastImageSearchPolicy;
+    private int _lastWhitelistHash;
 
     private void EnforceBrowserPolicies(ProtectConfig cfg)
     {
         bool safeOn = cfg.IsProtectionLocked && cfg.SafeBrowsingEnabled;
         bool imgBlockOn = cfg.IsProtectionLocked && cfg.BlockImageVideoSearch;
+        int wlHash = string.Join("|", cfg.WebsiteWhitelist.Select(w => w.Value)).GetHashCode();
 
-        if (_lastSafeBrowsingPolicy == safeOn && _lastImageSearchPolicy == imgBlockOn)
+        if (_lastSafeBrowsingPolicy == safeOn && _lastImageSearchPolicy == imgBlockOn && _lastWhitelistHash == wlHash)
             return;
 
         _lastSafeBrowsingPolicy = safeOn;
         _lastImageSearchPolicy = imgBlockOn;
+        _lastWhitelistHash = wlHash;
 
         string[] browserPolicyRoots =
         {
             @"SOFTWARE\Policies\BraveSoftware\Brave",
             @"SOFTWARE\Policies\Google\Chrome",
-            @"SOFTWARE\Policies\Microsoft\Edge"
+            @"SOFTWARE\Policies\Microsoft\Edge",
+            @"SOFTWARE\Policies\Opera Software\Opera Stable",
+            @"SOFTWARE\Policies\Opera Software\Opera GX Stable",
+            @"SOFTWARE\Policies\Vivaldi",
+            @"SOFTWARE\Policies\Chromium",
+            @"SOFTWARE\Policies\YandexBrowser",
+            @"SOFTWARE\Policies\The Browser Company\Arc",
+            @"SOFTWARE\Policies\Thorium",
+            @"SOFTWARE\Policies\Comodo\Dragon"
         };
 
         string[] imageVideoPatterns =
@@ -233,9 +244,34 @@ public sealed class ProcessBlockerWorker : BackgroundService
                 using var key = Registry.LocalMachine.CreateSubKey(root, writable: true);
                 if (key == null) continue;
 
-                // Safe Browsing: Force Google SafeSearch + YouTube Strict Restricted Mode
+                // Safe Browsing:
+                // 1. Force Google SafeSearch + YouTube Strict Restricted Mode
                 key.SetValue("ForceGoogleSafeSearch", safeOn ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue("ForceYouTubeRestrict", safeOn ? 2 : 0, RegistryValueKind.DWord);
+
+                // 2. Block ALL images on non-whitelisted websites (DefaultImagesSetting = 2)
+                //    and allow images on whitelisted websites (ImagesAllowedForUrls)
+                key.SetValue("DefaultImagesSetting", safeOn ? 2 : 1, RegistryValueKind.DWord);
+                key.DeleteSubKeyTree("ImagesAllowedForUrls", throwOnMissingSubKey: false);
+                if (safeOn && cfg.WebsiteWhitelist.Count > 0)
+                {
+                    using var allowImgKey = key.CreateSubKey("ImagesAllowedForUrls", writable: true);
+                    if (allowImgKey != null)
+                    {
+                        int idx = 1;
+                        foreach (var w in cfg.WebsiteWhitelist)
+                        {
+                            string dom = SecurityHelper.NormalizeDomain(w.Value);
+                            if (!string.IsNullOrWhiteSpace(dom))
+                            {
+                                allowImgKey.SetValue(idx++.ToString(), $"[*.]{dom}", RegistryValueKind.String);
+                            }
+                        }
+                    }
+                }
+
+                // 3. Block ALL file downloads in Brave/Chrome/Edge (DownloadRestrictions = 3)
+                key.SetValue("DownloadRestrictions", safeOn ? 3 : 0, RegistryValueKind.DWord);
 
                 // Block Image & Video Search across HTTPS search engines
                 key.DeleteSubKeyTree("URLBlocklist", throwOnMissingSubKey: false);
@@ -248,6 +284,35 @@ public sealed class ProcessBlockerWorker : BackgroundService
                         {
                             blockKey.SetValue((i + 1).ToString(), imageVideoPatterns[i], RegistryValueKind.String);
                         }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        // Also enforce Firefox / LibreWolf / Waterfox policies
+        string[] geckoRoots =
+        {
+            @"SOFTWARE\Policies\Mozilla\Firefox",
+            @"SOFTWARE\Policies\LibreWolf",
+            @"SOFTWARE\Policies\Waterfox"
+        };
+        foreach (string geckoRoot in geckoRoots)
+        {
+            try
+            {
+                using var ffKey = Registry.LocalMachine.CreateSubKey(geckoRoot, writable: true);
+                if (ffKey == null) continue;
+                ffKey.SetValue("DisablePrivateBrowsing", safeOn ? 1 : 0, RegistryValueKind.DWord);
+                ffKey.SetValue("BlockAboutConfig", safeOn ? 1 : 0, RegistryValueKind.DWord);
+                ffKey.DeleteSubKeyTree("WebsiteFilter", throwOnMissingSubKey: false);
+                if (imgBlockOn)
+                {
+                    using var blockKey = ffKey.CreateSubKey(@"WebsiteFilter\Block", writable: true);
+                    if (blockKey != null)
+                    {
+                        for (int i = 0; i < imageVideoPatterns.Length; i++)
+                            blockKey.SetValue((i + 1).ToString(), imageVideoPatterns[i], RegistryValueKind.String);
                     }
                 }
             }

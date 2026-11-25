@@ -684,6 +684,33 @@
                 <StackPanel>
                     <!-- WEBSITES HUB VIEW -->
                     <StackPanel x:Name="WebsitesHubView" Visibility="Visible">
+                        <!-- Gold Reminder Banner when Protection is OFF -->
+                        <Border x:Name="ProtectionOffBanner"
+                                CornerRadius="16"
+                                BorderBrush="{StaticResource GoldBrush}"
+                                BorderThickness="1.3"
+                                Padding="14,12"
+                                Margin="0,0,0,14"
+                                Visibility="Collapsed">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#2B2210" Offset="0"/>
+                                    <GradientStop Color="#17130A" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <TextBlock Text="PROTECTION IS OFF" Foreground="{StaticResource GoldLightBrush}" FontSize="11" FontWeight="ExtraBold"/>
+                                    <TextBlock Text="Turn on Protection to activate these website rules." Foreground="{StaticResource InkBrush}" Opacity="0.85" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Turn On →" Style="{StaticResource GoldButton}" Padding="12,8" FontSize="11" VerticalAlignment="Center" Click="NavHome_Click"/>
+                            </Grid>
+                        </Border>
+
                         <!-- 7-Day Free Trial / Premium Status Pill -->
                         <Border x:Name="TrialBanner" Background="#1A160D" BorderBrush="#55D4AF37" BorderThickness="1" CornerRadius="14" Padding="12,8" Margin="0,0,0,14">
                             <Grid>

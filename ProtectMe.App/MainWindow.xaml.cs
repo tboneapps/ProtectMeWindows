@@ -170,6 +170,7 @@ public partial class MainWindow : Window
         }
 
         ServiceWarningCard.Visibility = _serviceRunning ? Visibility.Collapsed : Visibility.Visible;
+        ProtectionOffBanner.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
 
         WhitelistOnlyCheck.IsChecked = _config.WhitelistOnlyWebsites;
         BindTboneWebsiteCards();
