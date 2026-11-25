@@ -35,8 +35,10 @@ public partial class MainWindow : Window
             StatusText.Text = "Stopping any previous ProtectMe service...";
             InstallProgress.Value = 15;
             await RunCmdAsync("sc.exe", "stop ProtectMeService");
+            await RunCmdAsync("taskkill.exe", "/F /IM ProtectMe.exe");
+            await RunCmdAsync("taskkill.exe", "/F /IM ProtectMe.Service.exe");
             await RunCmdAsync("sc.exe", "delete ProtectMeService");
-            await Task.Delay(1200);
+            await Task.Delay(1500);
 
             StatusText.Text = "Extracting ProtectMe to C:\\Program Files\\ProtectMe...";
             InstallProgress.Value = 45;
