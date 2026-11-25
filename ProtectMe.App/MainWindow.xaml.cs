@@ -50,7 +50,7 @@ public partial class MainWindow : Window
         Loaded += async (_, _) =>
         {
             await RefreshStateAsync();
-            if (!_serviceRunning || !_config.HasPassword)
+            if (!_serviceRunning)
             {
                 var permWin = new PermissionsWindow { Owner = this };
                 permWin.ShowDialog();
@@ -250,13 +250,6 @@ public partial class MainWindow : Window
 
     private async Task LockProtectionAsync()
     {
-        if (!_config.HasPassword)
-        {
-            MessageBox.Show("Please set a Master Password on the Password page first.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Information);
-            SwitchTab(1);
-            return;
-        }
-
         if (_serviceRunning)
         {
             var resp = await PipeClient.SendAsync(new PipeRequest { Action = "lock" });
@@ -276,12 +269,16 @@ public partial class MainWindow : Window
 
     private async Task UnlockProtectionAsync()
     {
-        string? pw = PromptPassword("Unlock Protection", "Enter your Master Password to turn off ProtectMe.");
-        if (pw == null) return;
+        string? pw = null;
+        if (_config.HasPassword)
+        {
+            pw = PromptPassword("Unlock Protection", "Enter your Master Password to turn off ProtectMe.");
+            if (pw == null) return;
+        }
 
         if (_serviceRunning)
         {
-            var resp = await PipeClient.SendAsync(new PipeRequest { Action = "unlock", Password = pw });
+            var resp = await PipeClient.SendAsync(new PipeRequest { Action = "unlock", Password = pw ?? string.Empty });
             if (resp is not { Success: true })
             {
                 MessageBox.Show(resp?.Message ?? "Unlock failed.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Warning);
@@ -290,7 +287,7 @@ public partial class MainWindow : Window
         }
         else
         {
-            if (!SecurityHelper.VerifyPassword(pw, _config.PasswordHash, _config.PasswordSalt))
+            if (_config.HasPassword && !SecurityHelper.VerifyPassword(pw ?? string.Empty, _config.PasswordHash, _config.PasswordSalt))
             {
                 MessageBox.Show("Incorrect master password.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;

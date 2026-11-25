@@ -95,9 +95,6 @@ public sealed class PipeServerWorker : BackgroundService
                 return new PipeResponse { Success = true, Message = "Master password updated.", Config = _state.GetSnapshot() };
 
             case "lock":
-                if (!cfg.HasPassword)
-                    return new PipeResponse { Success = false, Message = "Set a master password before locking." };
-
                 _state.Update(c =>
                 {
                     c.IsProtectionLocked = true;
