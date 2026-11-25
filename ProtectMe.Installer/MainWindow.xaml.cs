@@ -63,11 +63,24 @@ public partial class MainWindow : Window
 
             using (var archive = new ZipArchive(resStream, ZipArchiveMode.Read))
             {
+                string stamp = DateTime.UtcNow.Ticks.ToString();
                 foreach (var entry in archive.Entries)
                 {
                     if (string.IsNullOrEmpty(entry.Name)) continue;
                     string destPath = Path.Combine(InstallDir, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                    if (File.Exists(destPath))
+                    {
+                        try
+                        {
+                            File.Delete(destPath);
+                        }
+                        catch
+                        {
+                            // Windows always allows renaming a running .exe so the new version can extract cleanly!
+                            File.Move(destPath, destPath + ".old." + stamp, overwrite: true);
+                        }
+                    }
                     entry.ExtractToFile(destPath, overwrite: true);
                 }
             }
