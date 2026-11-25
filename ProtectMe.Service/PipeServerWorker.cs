@@ -124,10 +124,20 @@ public sealed class PipeServerWorker : BackgroundService
                 return new PipeResponse { Success = true, Message = "Protection unlocked.", Config = _state.GetSnapshot() };
 
             case "update_config":
-                if (cfg.IsProtectionLocked && !_state.VerifyPassword(req.Password))
-                    return new PipeResponse { Success = false, Message = "Password required while locked." };
                 if (req.Config == null)
                     return new PipeResponse { Success = false, Message = "Missing config." };
+
+                // Allow tightening protection (turning features ON) while locked without password;
+                // require password only when weakening protection while locked.
+                bool weakening =
+                    (cfg.WhitelistOnlyWebsites && !req.Config.WhitelistOnlyWebsites) ||
+                    (cfg.SafeBrowsingEnabled && !req.Config.SafeBrowsingEnabled) ||
+                    (cfg.BlockPornEnabled && !req.Config.BlockPornEnabled) ||
+                    (cfg.BlockImageVideoSearch && !req.Config.BlockImageVideoSearch) ||
+                    (cfg.BlockNewInstalledApps && !req.Config.BlockNewInstalledApps);
+
+                if (cfg.IsProtectionLocked && cfg.HasPassword && weakening && !_state.VerifyPassword(req.Password))
+                    return new PipeResponse { Success = false, Message = "Password required while locked." };
 
                 _state.Update(c =>
                 {

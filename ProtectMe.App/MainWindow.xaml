@@ -177,65 +177,96 @@
                 </StackPanel>
             </Grid>
 
-            <!-- PAGE 2: PASSWORD (Clean 24K Gold Ambience Block + Red Uninstall at Bottom) -->
-            <Grid x:Name="PasswordPanel" Visibility="Collapsed" Margin="22,8,22,18">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <!-- PAGE 2: PASSWORD OR PIN (Polished 24K Gold Ambience, Show/Hide Eye, Confirm Twice) -->
+            <ScrollViewer x:Name="PasswordPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="20,6,20,16">
+                <StackPanel>
+                    <!-- 24K Gold Ambience Password / PIN Card -->
+                    <Border Style="{StaticResource PmCard}" BorderBrush="#66D4AF37" Padding="20" Margin="0,0,0,18">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#231D11" Offset="0"/>
+                                <GradientStop Color="#110F0B" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <StackPanel>
+                            <!-- Card Header + Active Status Pill -->
+                            <Grid Margin="0,0,0,14">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="38" Height="38" CornerRadius="11" Background="#1F1A10" BorderBrush="#66D4AF37" BorderThickness="1" Margin="0,0,12,0">
+                                    <TextBlock Text="🔑" FontSize="17" Foreground="{StaticResource GoldLightBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="Unlock Key" Foreground="{StaticResource GoldLightBrush}" FontFamily="{StaticResource ManropeFont}" FontSize="15" FontWeight="Bold"/>
+                                    <TextBlock x:Name="PasswordStatusText" Text="No password or PIN set yet." Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+                                </StackPanel>
+                                <Border x:Name="PasswordStatusPill" Grid.Column="2" Background="#1B1914" BorderBrush="#332E24" BorderThickness="1" CornerRadius="10" Padding="10,4" VerticalAlignment="Center">
+                                    <TextBlock x:Name="PasswordStatusPillText" Text="OFF" Foreground="{StaticResource MutedBrush}" FontSize="10" FontWeight="ExtraBold"/>
+                                </Border>
+                            </Grid>
 
-                <!-- Centered 24K Gold Ambience Password Card -->
-                <Border Grid.Row="0"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource PmCard}"
-                        BorderBrush="#66D4AF37"
-                        Padding="24">
-                    <Border.Background>
-                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#211C12" Offset="0"/>
-                            <GradientStop Color="#12100C" Offset="1"/>
-                        </LinearGradientBrush>
-                    </Border.Background>
-                    <StackPanel>
-                        <!-- Header Row with Key Badge + ON/OFF Gold Toggle Switch -->
-                        <Grid Margin="0,0,0,14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="40" Height="40" CornerRadius="12" Background="#1F1A10" BorderBrush="#66D4AF37" BorderThickness="1" Margin="0,0,12,0">
-                                <TextBlock Text="🔑" FontSize="18" Foreground="{StaticResource GoldLightBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <!-- Mode Switcher: Password | PIN -->
+                            <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="4" Margin="0,0,0,14">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="ModePasswordBtn" Grid.Column="0" Content="Password" Style="{StaticResource GoldButton}" Padding="8,7" FontSize="12" Click="ModePassword_Click"/>
+                                    <Button x:Name="ModePinBtn" Grid.Column="1" Content="PIN (Digits)" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Padding="8,7" Cursor="Hand" Click="ModePin_Click"/>
+                                </Grid>
                             </Border>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="Password" Foreground="{StaticResource GoldLightBrush}" FontFamily="{StaticResource ManropeFont}" FontSize="16" FontWeight="Bold"/>
-                                <TextBlock Text="Require password to unlock" Foreground="{StaticResource MutedBrush}" FontSize="11"/>
+
+                            <!-- Current Password / PIN (shown only if already set) -->
+                            <StackPanel x:Name="CurrentPwPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                                <TextBlock x:Name="CurrentPwLabel" Text="CURRENT PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <PasswordBox x:Name="CurrentPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14"/>
+                                    <TextBox x:Name="CurrentPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14"/>
+                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                </Grid>
                             </StackPanel>
-                            <CheckBox x:Name="PasswordToggleSwitch" Grid.Column="2" Style="{StaticResource GoldToggleSwitch}" Click="PasswordToggle_Click"/>
-                        </Grid>
 
-                        <TextBlock x:Name="PasswordStatusText"
-                                   Text="No master password set yet."
-                                   Foreground="{StaticResource InkBrush}"
-                                   FontSize="12"
-                                   Opacity="0.85"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,18"/>
+                            <!-- New Password / PIN -->
+                            <StackPanel Margin="0,0,0,12">
+                                <TextBlock x:Name="NewPwLabel" Text="NEW PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <PasswordBox x:Name="NewPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
+                                    <TextBox x:Name="NewPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
+                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                </Grid>
+                            </StackPanel>
 
-                        <Button Content="Change Password" Style="{StaticResource GoldButton}" Click="SetPassword_Click"/>
-                    </StackPanel>
-                </Border>
+                            <!-- Confirm New Password / PIN -->
+                            <StackPanel Margin="0,0,0,10">
+                                <TextBlock x:Name="ConfirmPwLabel" Text="CONFIRM PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                <Grid>
+                                    <PasswordBox x:Name="ConfirmPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
+                                    <TextBox x:Name="ConfirmPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
+                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                </Grid>
+                            </StackPanel>
 
-                <!-- Small Red Uninstall Button at Bottom (No Huge Box) -->
-                <Button Grid.Row="1"
-                        Content="Uninstall ProtectMe"
-                        Style="{StaticResource DangerButton}"
-                        HorizontalAlignment="Center"
-                        Padding="22,9"
-                        FontSize="12"
-                        Margin="0,8,0,4"
-                        Click="Uninstall_Click"/>
-            </Grid>
+                            <!-- Live Match / Validation Feedback -->
+                            <TextBlock x:Name="PwValidationText" Text="" FontSize="11.5" FontWeight="SemiBold" Margin="2,0,0,14" MinHeight="16"/>
+
+                            <Button x:Name="SavePasswordBtn" Content="Save Password" Style="{StaticResource GoldButton}" Click="SavePasswordForm_Click"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Small Red Uninstall Button at Bottom -->
+                    <Button Content="Uninstall ProtectMe"
+                            Style="{StaticResource DangerButton}"
+                            HorizontalAlignment="Center"
+                            Padding="22,9"
+                            FontSize="12"
+                            Margin="0,4,0,8"
+                            Click="Uninstall_Click"/>
+                </StackPanel>
+            </ScrollViewer>
 
             <!-- PAGE 3: RULES (Exact Match to ProtectMe Android: Blocked apps | Apps offline | Schedule) -->
             <ScrollViewer x:Name="AppsPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="20,10">

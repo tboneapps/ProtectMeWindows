@@ -6,7 +6,7 @@ namespace ProtectMe.Core;
 
 public static class UpdateService
 {
-    public const string CurrentVersion = "1.0.0";
+    public const string CurrentVersion = "1.0.1";
     private const string LatestReleaseApi = "https://api.github.com/repos/tboneapps/ProtectMeWindows/releases/latest";
 
     private static readonly HttpClient Http = CreateClient();

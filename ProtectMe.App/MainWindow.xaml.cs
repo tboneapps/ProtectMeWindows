@@ -32,6 +32,9 @@ public partial class MainWindow : Window
     private bool _showingBlockPopup;
     private readonly Dictionary<string, DateTime> _dismissedDomains = new(StringComparer.OrdinalIgnoreCase);
     private string _pendingUpdateUrl = string.Empty;
+    private bool _isPinMode;
+    private bool _showPasswords;
+    private bool _syncingPw;
 
     public MainWindow()
     {
@@ -230,10 +233,16 @@ public partial class MainWindow : Window
         WhitelistPagesControl.ItemsSource = null;
         WhitelistPagesControl.ItemsSource = specificPages;
 
-        PasswordToggleSwitch.IsChecked = _config.HasPassword;
+        PasswordStatusPillText.Text = _config.HasPassword ? "ACTIVE" : "OFF";
+        PasswordStatusPillText.Foreground = (Brush)FindResource(_config.HasPassword ? "GoldLightBrush" : "MutedBrush");
+        PasswordStatusPill.BorderBrush = (Brush)FindResource(_config.HasPassword ? "GoldBrush" : "CardBorderBrush");
+        CurrentPwPanel.Visibility = _config.HasPassword ? Visibility.Visible : Visibility.Collapsed;
         PasswordStatusText.Text = _config.HasPassword
-            ? "Master password is active. Required to unlock or uninstall."
-            : "Toggle ON or tap Change Password to set your master password.";
+            ? "Active — required to unlock or uninstall."
+            : "Set a password or PIN below.";
+        SavePasswordBtn.Content = _config.HasPassword
+            ? (_isPinMode ? "Update PIN" : "Update Password")
+            : (_isPinMode ? "Save PIN" : "Save Password");
 
         BindBlockedAppsGrid();
         BindOfflineAppsGrid();
@@ -641,31 +650,139 @@ public partial class MainWindow : Window
         await RefreshStateAsync();
     }
 
-    private void PasswordToggle_Click(object sender, RoutedEventArgs e)
+    private void ModePassword_Click(object sender, RoutedEventArgs e)
     {
-        if (PasswordToggleSwitch.IsChecked == true && !_config.HasPassword)
-        {
-            SetPassword_Click(sender, e);
-        }
-        else if (PasswordToggleSwitch.IsChecked == false && _config.HasPassword)
-        {
-            // Keep password enabled for safety; prompt to change instead
-            PasswordToggleSwitch.IsChecked = true;
-            MessageBox.Show("Master Password stays enabled while ProtectMe is installed. Use Change Password to update it.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+        _isPinMode = false;
+        ModePasswordBtn.Style = (Style)FindResource("GoldButton");
+        ModePinBtn.Style = null;
+        ModePinBtn.Background = Brushes.Transparent;
+        ModePinBtn.BorderThickness = new Thickness(0);
+        ModePinBtn.Foreground = (Brush)FindResource("MutedBrush");
+        CurrentPwLabel.Text = "CURRENT PASSWORD";
+        NewPwLabel.Text = "NEW PASSWORD";
+        ConfirmPwLabel.Text = "CONFIRM PASSWORD";
+        SavePasswordBtn.Content = _config.HasPassword ? "Update Password" : "Save Password";
+        ValidatePasswordFields();
     }
 
-    private async void SetPassword_Click(object sender, RoutedEventArgs e)
+    private void ModePin_Click(object sender, RoutedEventArgs e)
     {
-        string? currentPw = null;
-        if (_config.HasPassword)
+        _isPinMode = true;
+        ModePinBtn.Style = (Style)FindResource("GoldButton");
+        ModePasswordBtn.Style = null;
+        ModePasswordBtn.Background = Brushes.Transparent;
+        ModePasswordBtn.BorderThickness = new Thickness(0);
+        ModePasswordBtn.Foreground = (Brush)FindResource("MutedBrush");
+        CurrentPwLabel.Text = "CURRENT PASSWORD / PIN";
+        NewPwLabel.Text = "NEW PIN (4–8 DIGITS)";
+        ConfirmPwLabel.Text = "CONFIRM PIN";
+        SavePasswordBtn.Content = _config.HasPassword ? "Update PIN" : "Save PIN";
+        ValidatePasswordFields();
+    }
+
+    private void ToggleShowPw_Click(object sender, RoutedEventArgs e)
+    {
+        _showPasswords = !_showPasswords;
+        _syncingPw = true;
+        try
         {
-            currentPw = PromptPassword("Current Password", "Enter your current Master Password.");
-            if (currentPw == null) return;
+            if (_showPasswords)
+            {
+                CurrentPwPlain.Text = CurrentPwBox.Password;
+                NewPwPlain.Text = NewPwBox.Password;
+                ConfirmPwPlain.Text = ConfirmPwBox.Password;
+            }
+            else
+            {
+                CurrentPwBox.Password = CurrentPwPlain.Text;
+                NewPwBox.Password = NewPwPlain.Text;
+                ConfirmPwBox.Password = ConfirmPwPlain.Text;
+            }
+            CurrentPwBox.Visibility = _showPasswords ? Visibility.Collapsed : Visibility.Visible;
+            CurrentPwPlain.Visibility = _showPasswords ? Visibility.Visible : Visibility.Collapsed;
+            NewPwBox.Visibility = _showPasswords ? Visibility.Collapsed : Visibility.Visible;
+            NewPwPlain.Visibility = _showPasswords ? Visibility.Visible : Visibility.Collapsed;
+            ConfirmPwBox.Visibility = _showPasswords ? Visibility.Collapsed : Visibility.Visible;
+            ConfirmPwPlain.Visibility = _showPasswords ? Visibility.Visible : Visibility.Collapsed;
+        }
+        finally { _syncingPw = false; }
+    }
+
+    private void PwField_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_syncingPw) return;
+        ValidatePasswordFields();
+    }
+
+    private void PwPlain_Changed(object sender, TextChangedEventArgs e)
+    {
+        if (_syncingPw) return;
+        ValidatePasswordFields();
+    }
+
+    private (string Current, string NewVal, string Confirm) GetPwInputs()
+    {
+        return _showPasswords
+            ? (CurrentPwPlain.Text, NewPwPlain.Text, ConfirmPwPlain.Text)
+            : (CurrentPwBox.Password, NewPwBox.Password, ConfirmPwBox.Password);
+    }
+
+    private bool ValidatePasswordFields()
+    {
+        var (_, newVal, confirm) = GetPwInputs();
+        if (string.IsNullOrEmpty(newVal) && string.IsNullOrEmpty(confirm))
+        {
+            PwValidationText.Text = string.Empty;
+            return false;
+        }
+        if (_isPinMode)
+        {
+            if (!newVal.All(char.IsDigit) || newVal.Length < 4 || newVal.Length > 8)
+            {
+                PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+                PwValidationText.Text = "PIN must be 4 to 8 numbers only.";
+                return false;
+            }
+        }
+        else if (newVal.Length < 4)
+        {
+            PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+            PwValidationText.Text = "Password must be at least 4 characters.";
+            return false;
         }
 
-        string? newPw = PromptPassword("New Master Password", "Enter a new Master Password (at least 4 characters).");
-        if (string.IsNullOrWhiteSpace(newPw)) return;
+        if (!string.IsNullOrEmpty(confirm) && newVal != confirm)
+        {
+            PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+            PwValidationText.Text = _isPinMode ? "PINs do not match." : "Passwords do not match.";
+            return false;
+        }
+
+        if (newVal == confirm)
+        {
+            PwValidationText.Foreground = (Brush)FindResource("GoldLightBrush");
+            PwValidationText.Text = _isPinMode ? "PINs match ✓" : "Passwords match ✓";
+            return true;
+        }
+
+        PwValidationText.Text = string.Empty;
+        return false;
+    }
+
+    private async void SavePasswordForm_Click(object sender, RoutedEventArgs e)
+    {
+        if (!ValidatePasswordFields())
+        {
+            var (_, nv, cf) = GetPwInputs();
+            if (nv != cf)
+            {
+                PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+                PwValidationText.Text = _isPinMode ? "Please confirm your PIN twice." : "Please confirm your password twice.";
+            }
+            return;
+        }
+
+        var (currentPw, newPw, _) = GetPwInputs();
 
         if (_serviceRunning)
         {
@@ -675,22 +792,32 @@ public partial class MainWindow : Window
                 Password = currentPw,
                 NewPassword = newPw
             });
-            MessageBox.Show(resp?.Message ?? "Done.", "ProtectMe");
+            if (resp is not { Success: true })
+            {
+                PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+                PwValidationText.Text = resp?.Message ?? "Could not save.";
+                return;
+            }
         }
         else
         {
-            if (_config.HasPassword && !SecurityHelper.VerifyPassword(currentPw ?? "", _config.PasswordHash, _config.PasswordSalt))
+            if (_config.HasPassword && !SecurityHelper.VerifyPassword(currentPw, _config.PasswordHash, _config.PasswordSalt))
             {
-                MessageBox.Show("Current password is incorrect.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Warning);
+                PwValidationText.Foreground = (Brush)FindResource("DangerBrush");
+                PwValidationText.Text = "Current password is incorrect.";
                 return;
             }
             var (hash, salt) = SecurityHelper.HashPassword(newPw);
             _config.PasswordHash = hash;
             _config.PasswordSalt = salt;
             ConfigStore.Save(_config);
-            MessageBox.Show("Master password saved.", "ProtectMe");
         }
 
+        CurrentPwBox.Password = CurrentPwPlain.Text = string.Empty;
+        NewPwBox.Password = NewPwPlain.Text = string.Empty;
+        ConfirmPwBox.Password = ConfirmPwPlain.Text = string.Empty;
+        PwValidationText.Foreground = (Brush)FindResource("GoldLightBrush");
+        PwValidationText.Text = _isPinMode ? "PIN saved ✓" : "Password saved ✓";
         await RefreshStateAsync();
     }
 
