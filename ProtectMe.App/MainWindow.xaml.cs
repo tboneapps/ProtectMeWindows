@@ -154,6 +154,11 @@ public partial class MainWindow : Window
         HoldHintTitle.Foreground = (Brush)FindResource(locked ? "TitleGradientBrush" : "MutedBrush");
         HoldHintSubtitle.Visibility = locked ? Visibility.Visible : Visibility.Collapsed;
         HoldPillButton.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
+        if (!locked && !_isHolding)
+        {
+            HoldPillFill.Width = 0;
+            HoldPillText.Foreground = (Brush)FindResource("GoldLightBrush");
+        }
 
         if (locked)
         {
@@ -289,6 +294,7 @@ public partial class MainWindow : Window
             HoldPillFill.Width = maxW;
             await LockProtectionAsync();
             HoldPillFill.Width = 0;
+            HoldPillText.Foreground = (Brush)FindResource("GoldLightBrush");
         }
         else
         {
@@ -409,11 +415,17 @@ public partial class MainWindow : Window
         // Can turn ON anytime; CANNOT turn OFF while Protection is ON
         if (_config.SafeBrowsingEnabled && _config.IsProtectionLocked)
         {
-            MessageBox.Show("Safe Browsing is locked while Protection is ON. Turn off Protection first.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Information);
+            new ToggleToastDialog("Safe Browsing: Locked on", "Cannot be turned off while Protection is ON.").Show();
             return;
         }
         _config.SafeBrowsingEnabled = !_config.SafeBrowsingEnabled;
         await PushConfigAsync();
+
+        string title = _config.SafeBrowsingEnabled ? "Safe Browsing: On" : "Safe Browsing: Off";
+        string body = _config.SafeBrowsingEnabled
+            ? "• Browse the web freely\n• Images & thumbnails: black screen\n• Downloads blocked\n• Whitelist websites not limited"
+            : "Images and downloads work as normal.";
+        new ToggleToastDialog(title, body) { Owner = this }.Show();
     }
 
     private async void BlockImagesCard_Click(object sender, MouseButtonEventArgs e)
@@ -421,11 +433,17 @@ public partial class MainWindow : Window
         // Can turn ON anytime; CANNOT turn OFF while Protection is ON
         if (_config.BlockImageVideoSearch && _config.IsProtectionLocked)
         {
-            MessageBox.Show("Block Image & Video Search is locked while Protection is ON. Turn off Protection first.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Information);
+            new ToggleToastDialog("Block Image & Video Search: Locked on", "Cannot be turned off while Protection is ON.").Show();
             return;
         }
         _config.BlockImageVideoSearch = !_config.BlockImageVideoSearch;
         await PushConfigAsync();
+
+        string title = _config.BlockImageVideoSearch ? "Block Image & Video Search: On" : "Block Image & Video Search: Off";
+        string body = _config.BlockImageVideoSearch
+            ? "Blocked across all major search engines."
+            : "Image and video search works as normal.";
+        new ToggleToastDialog(title, body) { Owner = this }.Show();
     }
 
     private async void WhitelistOnlyCheck_Click(object sender, RoutedEventArgs e)

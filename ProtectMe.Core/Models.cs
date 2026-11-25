@@ -48,8 +48,8 @@ public sealed class ProtectConfig
 {
     public bool IsProtectionLocked { get; set; } = false;
     public bool WhitelistOnlyWebsites { get; set; } = true;
-    public bool SafeBrowsingEnabled { get; set; } = true;
-    public bool BlockImageVideoSearch { get; set; } = true;
+    public bool SafeBrowsingEnabled { get; set; } = false;
+    public bool BlockImageVideoSearch { get; set; } = false;
     public int ProxyPort { get; set; } = 8787;
 
     // 7-Day Free Trial + Lemon Squeezy £10/year Websites Pro License
