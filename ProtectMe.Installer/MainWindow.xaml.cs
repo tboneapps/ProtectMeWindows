@@ -34,6 +34,20 @@ public partial class MainWindow : Window
         {
             StatusText.Text = "Stopping any previous ProtectMe service...";
             InstallProgress.Value = 15;
+            // Ask running service to unlock its DACL (only succeeds if no Master Password is set yet)
+            try
+            {
+                using var pipe = new System.IO.Pipes.NamedPipeClientStream(".", "ProtectMeWindowsServicePipe", System.IO.Pipes.PipeDirection.InOut);
+                await pipe.ConnectAsync(1500);
+                byte[] req = System.Text.Encoding.UTF8.GetBytes("{\"Action\":\"verify_uninstall\",\"Password\":\"\"}\n");
+                await pipe.WriteAsync(req);
+                await pipe.FlushAsync();
+                using var sr = new StreamReader(pipe);
+                await sr.ReadLineAsync();
+            }
+            catch { }
+
+            await RunCmdAsync("sc.exe", "failure ProtectMeService reset= 0 actions= \"\"");
             await RunCmdAsync("sc.exe", "stop ProtectMeService");
             await RunCmdAsync("taskkill.exe", "/F /IM ProtectMe.exe");
             await RunCmdAsync("taskkill.exe", "/F /IM ProtectMe.Service.exe");
