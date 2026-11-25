@@ -1,0 +1,10 @@
+bin/
+obj/
+Release/
+TabletPackage/
+*.exe
+*.zip
+*.user
+.vs/
+.idea/
+ProtectMe.Installer/ProtectMe-Payload.zip

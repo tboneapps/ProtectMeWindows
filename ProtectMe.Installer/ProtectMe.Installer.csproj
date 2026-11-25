@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>ProtectMe-Setup</AssemblyName>
+    <ApplicationIcon>..\ProtectMe.App\Assets\Images\protectme.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="ProtectMe-Payload.zip" LogicalName="ProtectMe-Payload.zip" />
+    <Resource Include="..\ProtectMe.App\Assets\Images\protectme_icon.png" Link="protectme_icon.png" />
+  </ItemGroup>
+</Project>

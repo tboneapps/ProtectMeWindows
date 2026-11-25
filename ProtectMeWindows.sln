@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtectMe.Core", "ProtectMe.Core\ProtectMe.Core.csproj", "{076700D3-4C52-4FF6-B65F-9FC2CFD7E2E0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtectMe.Service", "ProtectMe.Service\ProtectMe.Service.csproj", "{C6346245-B03B-4082-94A9-E94913DF71E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtectMe.App", "ProtectMe.App\ProtectMe.App.csproj", "{51D54CE4-17F2-4DA2-8E36-0F9CAFEB25E2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{076700D3-4C52-4FF6-B65F-9FC2CFD7E2E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{076700D3-4C52-4FF6-B65F-9FC2CFD7E2E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{076700D3-4C52-4FF6-B65F-9FC2CFD7E2E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{076700D3-4C52-4FF6-B65F-9FC2CFD7E2E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6346245-B03B-4082-94A9-E94913DF71E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6346245-B03B-4082-94A9-E94913DF71E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6346245-B03B-4082-94A9-E94913DF71E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6346245-B03B-4082-94A9-E94913DF71E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51D54CE4-17F2-4DA2-8E36-0F9CAFEB25E2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51D54CE4-17F2-4DA2-8E36-0F9CAFEB25E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51D54CE4-17F2-4DA2-8E36-0F9CAFEB25E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51D54CE4-17F2-4DA2-8E36-0F9CAFEB25E2}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
