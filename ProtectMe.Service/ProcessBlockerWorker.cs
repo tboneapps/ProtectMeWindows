@@ -38,6 +38,7 @@ public sealed class ProcessBlockerWorker : BackgroundService
             {
                 var cfg = _state.Current;
                 EnforceSystemProxy(cfg);
+                EnforceBrowserPolicies(cfg);
                 EnforceProcessBlocks(cfg);
                 if (cfg.BlockNewInstalledApps && (DateTime.UtcNow - _lastAppScanUtc).TotalSeconds >= 15)
                 {
@@ -194,6 +195,63 @@ public sealed class ProcessBlockerWorker : BackgroundService
             _lastProxyEnabled = shouldEnable;
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, IntPtr.Zero, 0);
             InternetSetOption(IntPtr.Zero, INTERNET_OPTION_REFRESH, IntPtr.Zero, 0);
+        }
+    }
+
+    private bool? _lastSafeBrowsingPolicy;
+    private bool? _lastImageSearchPolicy;
+
+    private void EnforceBrowserPolicies(ProtectConfig cfg)
+    {
+        bool safeOn = cfg.IsProtectionLocked && cfg.SafeBrowsingEnabled;
+        bool imgBlockOn = cfg.IsProtectionLocked && cfg.BlockImageVideoSearch;
+
+        if (_lastSafeBrowsingPolicy == safeOn && _lastImageSearchPolicy == imgBlockOn)
+            return;
+
+        _lastSafeBrowsingPolicy = safeOn;
+        _lastImageSearchPolicy = imgBlockOn;
+
+        string[] browserPolicyRoots =
+        {
+            @"SOFTWARE\Policies\BraveSoftware\Brave",
+            @"SOFTWARE\Policies\Google\Chrome",
+            @"SOFTWARE\Policies\Microsoft\Edge"
+        };
+
+        string[] imageVideoPatterns =
+        {
+            "*tbm=isch*", "*tbm=vid*", "*udm=2*", "*udm=7*",
+            "*iax=images*", "*iax=videos*", "*ia=images*", "*ia=videos*",
+            "*/images/search*", "*/videos/search*", "*/imghp*", "*/videohp*"
+        };
+
+        foreach (string root in browserPolicyRoots)
+        {
+            try
+            {
+                using var key = Registry.LocalMachine.CreateSubKey(root, writable: true);
+                if (key == null) continue;
+
+                // Safe Browsing: Force Google SafeSearch + YouTube Strict Restricted Mode
+                key.SetValue("ForceGoogleSafeSearch", safeOn ? 1 : 0, RegistryValueKind.DWord);
+                key.SetValue("ForceYouTubeRestrict", safeOn ? 2 : 0, RegistryValueKind.DWord);
+
+                // Block Image & Video Search across HTTPS search engines
+                key.DeleteSubKeyTree("URLBlocklist", throwOnMissingSubKey: false);
+                if (imgBlockOn)
+                {
+                    using var blockKey = key.CreateSubKey("URLBlocklist", writable: true);
+                    if (blockKey != null)
+                    {
+                        for (int i = 0; i < imageVideoPatterns.Length; i++)
+                        {
+                            blockKey.SetValue((i + 1).ToString(), imageVideoPatterns[i], RegistryValueKind.String);
+                        }
+                    }
+                }
+            }
+            catch { }
         }
     }
 

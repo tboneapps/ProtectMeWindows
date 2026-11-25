@@ -66,7 +66,7 @@ public sealed class ProtectConfig
     public DateTime? LockedUntilUtc { get; set; }
 
     public AntiTamperRules AntiTamper { get; set; } = new();
-    public bool BlockNewInstalledApps { get; set; } = false;
+    public bool BlockNewInstalledApps { get; set; } = true;
     public List<WhitelistEntry> WebsiteWhitelist { get; set; } = new();
     public List<BlockedAppEntry> BlockedApps { get; set; } = new();
     public List<BlockedAppEntry> OfflineApps { get; set; } = new();

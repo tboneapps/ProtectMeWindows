@@ -232,6 +232,21 @@
                 <StackPanel>
                     <!-- RULES HUB VIEW -->
                     <StackPanel x:Name="RulesHubView" Visibility="Visible">
+                        <!-- Auto-Block Newly Installed Apps Card (Top, Default ON) -->
+                        <Border Style="{StaticResource PmCard}" Padding="16" Margin="0,0,0,18">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Block newly installed apps" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="New apps can install, then auto-add to Blocked" Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <CheckBox x:Name="BlockNewAppsToggle" Grid.Column="1" Style="{StaticResource GoldToggleSwitch}" Click="BlockNewAppsToggle_Click"/>
+                            </Grid>
+                        </Border>
+
                         <!-- BLOCK APPS Section Label -->
                         <Grid Margin="0,4,0,14">
                             <Grid.ColumnDefinitions>
@@ -290,7 +305,7 @@
                         </Grid>
 
                         <!-- Schedule Row Card -->
-                        <Border Style="{StaticResource PmCard}" Padding="16" Margin="0,0,0,14" Cursor="Hand" MouseLeftButtonDown="OpenSchedule_Click">
+                        <Border Style="{StaticResource PmCard}" Padding="16" Cursor="Hand" MouseLeftButtonDown="OpenSchedule_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -305,21 +320,6 @@
                                     <TextBlock x:Name="ScheduleSummaryText" Text="Off" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
                                 </StackPanel>
                                 <TextBlock Grid.Column="2" Text="›" Foreground="{StaticResource MutedBrush}" FontSize="22" VerticalAlignment="Center"/>
-                            </Grid>
-                        </Border>
-
-                        <!-- Auto-Block Newly Installed Apps Card -->
-                        <Border Style="{StaticResource PmCard}" Padding="16">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
-                                    <TextBlock Text="Block newly installed apps" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
-                                    <TextBlock Text="New apps can install, then auto-add to Blocked" Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"/>
-                                </StackPanel>
-                                <CheckBox x:Name="BlockNewAppsToggle" Grid.Column="1" Style="{StaticResource GoldToggleSwitch}" Click="BlockNewAppsToggle_Click"/>
                             </Grid>
                         </Border>
                     </StackPanel>

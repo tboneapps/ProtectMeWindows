@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     private bool _auraAnimating;
     private DateTime _lastNotifiedBlockUtc = DateTime.UtcNow;
     private bool _showingBlockPopup;
+    private readonly Dictionary<string, DateTime> _dismissedDomains = new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindow()
     {
@@ -89,13 +90,40 @@ public partial class MainWindow : Window
         CheckForNewBlockedSitePopup();
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+
+    private static bool IsBrowserInForeground()
+    {
+        try
+        {
+            IntPtr hwnd = GetForegroundWindow();
+            if (hwnd == IntPtr.Zero) return false;
+            GetWindowThreadProcessId(hwnd, out uint pid);
+            using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
+            string name = proc.ProcessName.ToLowerInvariant();
+            return name is "brave" or "chrome" or "msedge" or "firefox" or "opera" or "vivaldi";
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     private async void CheckForNewBlockedSitePopup()
     {
         if (_showingBlockPopup || !_config.IsProtectionLocked || !_config.WhitelistOnlyWebsites) return;
+        if (!IsBrowserInForeground()) return;
         var newest = _config.RecentBlocked.FirstOrDefault(e => e.Kind == "Website" && e.TimestampUtc > _lastNotifiedBlockUtc);
         if (newest == null) return;
 
         _lastNotifiedBlockUtc = newest.TimestampUtc;
+        if (_dismissedDomains.TryGetValue(newest.Domain, out var until) && until > DateTime.UtcNow)
+            return;
+
         _showingBlockPopup = true;
         try
         {
@@ -104,6 +132,11 @@ public partial class MainWindow : Window
             {
                 string val = popup.SelectedScope.Value == WhitelistScope.WholeWebsite ? newest.Domain : newest.Target;
                 await AddWhitelistItemAsync(val, popup.SelectedScope.Value);
+            }
+            else
+            {
+                // Silence this domain for 10 minutes once dismissed
+                _dismissedDomains[newest.Domain] = DateTime.UtcNow.AddMinutes(10);
             }
         }
         finally
@@ -891,8 +924,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        string? pw = PromptPassword("Uninstall ProtectMe", "Enter your Master Password to authorize uninstalling ProtectMe.");
-        if (pw == null) return;
+        string? pw = string.Empty;
+        if (_config.HasPassword)
+        {
+            pw = PromptPassword("Uninstall ProtectMe", "Enter your Master Password to authorize uninstalling ProtectMe.");
+            if (pw == null) return;
+        }
+        else
+        {
+            if (MessageBox.Show("Are you sure you want to uninstall ProtectMe?", "Uninstall ProtectMe", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+        }
 
         if (_serviceRunning)
         {

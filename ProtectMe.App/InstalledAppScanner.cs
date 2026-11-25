@@ -26,44 +26,12 @@ public static class InstalledAppScanner
             }
         }
 
-        // 1. Scan Windows Uninstall Registry keys for all installed desktop apps
+        // 1. Scan Windows Uninstall Registry keys for all installed desktop apps (real user apps only)
         ScanUninstallRegistry(Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", map);
         ScanUninstallRegistry(Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", map);
         ScanUninstallRegistry(Registry.CurrentUser, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", map);
 
-        // 2. Scan Program Files & Program Files (x86) for top-level app executables
-        string[] programRoots =
-        {
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs")
-        };
-
-        foreach (string root in programRoots.Where(Directory.Exists))
-        {
-            try
-            {
-                foreach (string dir in Directory.EnumerateDirectories(root))
-                {
-                    if (dir.Contains("ProtectMe", StringComparison.OrdinalIgnoreCase) ||
-                        dir.Contains("Windows", StringComparison.OrdinalIgnoreCase) ||
-                        dir.Contains("Common Files", StringComparison.OrdinalIgnoreCase))
-                        continue;
-
-                    try
-                    {
-                        foreach (string exe in Directory.EnumerateFiles(dir, "*.exe", SearchOption.TopDirectoryOnly))
-                        {
-                            AddExeIfValid(exe, Path.GetFileName(dir), map);
-                        }
-                    }
-                    catch { }
-                }
-            }
-            catch { }
-        }
-
-        // 3. Also include currently running user apps with visible windows
+        // 2. Also include currently running user apps with visible windows
         foreach (var p in Process.GetProcesses())
         {
             try
@@ -94,7 +62,10 @@ public static class InstalledAppScanner
             finally { p.Dispose(); }
         }
 
+        // Deduplicate by DisplayName (prefer entries with an executable path)
         return map.Values
+            .GroupBy(a => a.DisplayName.Trim(), StringComparer.OrdinalIgnoreCase)
+            .Select(g => g.OrderByDescending(a => a.IsEnabled).ThenByDescending(a => !string.IsNullOrWhiteSpace(a.ExecutablePath)).First())
             .OrderByDescending(a => a.IsEnabled)
             .ThenBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
