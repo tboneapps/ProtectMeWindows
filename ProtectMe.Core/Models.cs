@@ -49,11 +49,14 @@ public sealed class ProtectConfig
     public bool IsProtectionLocked { get; set; } = false;
     public bool WhitelistOnlyWebsites { get; set; } = true;
     public bool SafeBrowsingEnabled { get; set; } = false;
+    public bool BlockPornEnabled { get; set; } = false;
     public bool BlockImageVideoSearch { get; set; } = false;
     public int ProxyPort { get; set; } = 8787;
 
     // 7-Day Free Trial + Lemon Squeezy £10/year Websites Pro License
     public DateTime? TrialStartedUtc { get; set; }
+    public bool StrictPopupShown { get; set; } = false;
+    public bool WebsitesIntroShown { get; set; } = false;
     public bool IsPremiumActive { get; set; } = false;
     public string LicenseKey { get; set; } = string.Empty;
     public string LicenseInstanceId { get; set; } = string.Empty;

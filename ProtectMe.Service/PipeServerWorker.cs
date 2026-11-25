@@ -133,8 +133,11 @@ public sealed class PipeServerWorker : BackgroundService
                 {
                     c.WhitelistOnlyWebsites = req.Config.WhitelistOnlyWebsites;
                     c.SafeBrowsingEnabled = req.Config.SafeBrowsingEnabled;
+                    c.BlockPornEnabled = req.Config.BlockPornEnabled;
                     c.BlockImageVideoSearch = req.Config.BlockImageVideoSearch;
                     c.TrialStartedUtc = req.Config.TrialStartedUtc;
+                    c.StrictPopupShown = req.Config.StrictPopupShown;
+                    c.WebsitesIntroShown = req.Config.WebsitesIntroShown;
                     c.IsPremiumActive = req.Config.IsPremiumActive;
                     c.LicenseKey = req.Config.LicenseKey;
                     c.LicenseInstanceId = req.Config.LicenseInstanceId;
@@ -182,6 +185,21 @@ public sealed class PipeServerWorker : BackgroundService
 
                 _state.Update(c => c.WebsiteWhitelist.RemoveAll(e => e.Id == req.EntryId));
                 return new PipeResponse { Success = true, Message = "Removed.", Config = _state.GetSnapshot() };
+
+            case "prepare_upgrade":
+                // Keeps IsProtectionLocked untouched so protection NEVER turns off during an update!
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = "sc.exe",
+                        Arguments = "sdset ProtectMeService \"D:(A;;CCLCSWRPWPDTLOCRRC;;;SY)(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;BA)(A;;CCLCSWLOCRRC;;;IU)(A;;CCLCSWLOCRRC;;;SU)\"",
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    })?.WaitForExit(3000);
+                }
+                catch { }
+                return new PipeResponse { Success = true, Message = "Ready for upgrade (protection state preserved)." };
 
             case "verify_uninstall":
                 if (!_state.VerifyPassword(req.Password))

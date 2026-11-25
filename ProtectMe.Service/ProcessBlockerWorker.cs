@@ -159,7 +159,7 @@ public sealed class ProcessBlockerWorker : BackgroundService
     {
         bool shouldEnable = cfg.IsProtectionLocked &&
                             cfg.AntiTamper.EnforceSystemProxy &&
-                            (cfg.WhitelistOnlyWebsites || cfg.SafeBrowsingEnabled || cfg.BlockImageVideoSearch);
+                            (cfg.WhitelistOnlyWebsites || cfg.SafeBrowsingEnabled || cfg.BlockPornEnabled || cfg.BlockImageVideoSearch);
         string proxyServer = $"127.0.0.1:{cfg.ProxyPort}";
 
         // Update all loaded user hives (works when running as LocalSystem)
@@ -199,19 +199,22 @@ public sealed class ProcessBlockerWorker : BackgroundService
     }
 
     private bool? _lastSafeBrowsingPolicy;
+    private bool? _lastPornPolicy;
     private bool? _lastImageSearchPolicy;
     private int _lastWhitelistHash;
 
     private void EnforceBrowserPolicies(ProtectConfig cfg)
     {
         bool safeOn = cfg.IsProtectionLocked && cfg.SafeBrowsingEnabled;
+        bool pornOn = cfg.IsProtectionLocked && cfg.BlockPornEnabled;
         bool imgBlockOn = cfg.IsProtectionLocked && cfg.BlockImageVideoSearch;
         int wlHash = string.Join("|", cfg.WebsiteWhitelist.Select(w => w.Value)).GetHashCode();
 
-        if (_lastSafeBrowsingPolicy == safeOn && _lastImageSearchPolicy == imgBlockOn && _lastWhitelistHash == wlHash)
+        if (_lastSafeBrowsingPolicy == safeOn && _lastPornPolicy == pornOn && _lastImageSearchPolicy == imgBlockOn && _lastWhitelistHash == wlHash)
             return;
 
         _lastSafeBrowsingPolicy = safeOn;
+        _lastPornPolicy = pornOn;
         _lastImageSearchPolicy = imgBlockOn;
         _lastWhitelistHash = wlHash;
 
@@ -230,11 +233,30 @@ public sealed class ProcessBlockerWorker : BackgroundService
             @"SOFTWARE\Policies\Comodo\Dragon"
         };
 
+        // Valid Chromium URLBlocklist patterns (must start with host/domain, not leading '*')
         string[] imageVideoPatterns =
         {
-            "*tbm=isch*", "*tbm=vid*", "*udm=2*", "*udm=7*",
-            "*iax=images*", "*iax=videos*", "*ia=images*", "*ia=videos*",
-            "*/images/search*", "*/videos/search*", "*/imghp*", "*/videohp*"
+            // Google (global & UK) Images & Videos
+            "google.com/search?*udm=2*", "google.com/search?*udm=7*",
+            "google.com/search?*tbm=isch*", "google.com/search?*tbm=vid*",
+            "google.com/imghp*", "google.com/imgres*", "google.com/videohp*",
+            "google.co.uk/search?*udm=2*", "google.co.uk/search?*udm=7*",
+            "google.co.uk/search?*tbm=isch*", "google.co.uk/search?*tbm=vid*",
+            "google.co.uk/imghp*", "google.co.uk/imgres*",
+            // Bing Images & Videos
+            "bing.com/images*", "bing.com/videos*",
+            // Brave Search Images & Videos
+            "search.brave.com/images*", "search.brave.com/videos*",
+            // DuckDuckGo Images & Videos
+            "duckduckgo.com/*iax=images*", "duckduckgo.com/*iax=videos*",
+            "duckduckgo.com/*ia=images*", "duckduckgo.com/*ia=videos*",
+            // Yahoo, Yandex, Ecosia, Qwant, Startpage, Baidu
+            "images.search.yahoo.com", "video.search.yahoo.com",
+            "yandex.com/images*", "yandex.com/video*", "yandex.ru/images*", "yandex.ru/video*",
+            "ecosia.org/images*", "ecosia.org/videos*",
+            "qwant.com/*t=images*", "qwant.com/*t=videos*",
+            "startpage.com/*cat=images*", "startpage.com/*cat=videos*",
+            "image.baidu.com", "v.baidu.com"
         };
 
         foreach (string root in browserPolicyRoots)
@@ -272,18 +294,49 @@ public sealed class ProcessBlockerWorker : BackgroundService
 
                 // 3. Block ALL file downloads in Brave/Chrome/Edge (DownloadRestrictions = 3)
                 key.SetValue("DownloadRestrictions", safeOn ? 3 : 0, RegistryValueKind.DWord);
+                // Ensure browser reloads policies cleanly on restart (don't stay stuck in background)
+                key.SetValue("BackgroundModeEnabled", 0, RegistryValueKind.DWord);
 
-                // Block Image & Video Search across HTTPS search engines
+                // 4. Auto-install & lock ProtectMe Companion Extension when Safe Browsing is ON
+                //    (renders images & videos as clean solid black boxes — zero clicks for customer)
+                key.DeleteSubKeyTree("ExtensionInstallForcelist", throwOnMissingSubKey: false);
+                if (safeOn)
+                {
+                    using var extKey = key.CreateSubKey("ExtensionInstallForcelist", writable: true);
+                    extKey?.SetValue("1", "kalbgbihhjjlejdfejimdkiemfaijobi;https://clients2.google.com/service/update2/crx", RegistryValueKind.String);
+                }
+
+                // Combine URLBlocklist patterns (Image/Video Search + Porn domains & searches)
+                var blockPatterns = new List<string>();
+                if (imgBlockOn) blockPatterns.AddRange(imageVideoPatterns);
+                if (pornOn)
+                {
+                    blockPatterns.AddRange(new[]
+                    {
+                        "pornhub.com", "xvideos.com", "xnxx.com", "xhamster.com", "redtube.com", "youporn.com",
+                        "tube8.com", "spankbang.com", "brazzers.com", "onlyfans.com", "chaturbate.com",
+                        "stripchat.com", "bongacams.com", "cam4.com", "livejasmin.com", "myfreecams.com",
+                        "eporner.com", "hqporner.com", "tnaflix.com", "rule34.xxx", "nhentai.net", "e-hentai.org",
+                        "sex.com", "xxx.com",
+                        "google.com/search?*porn*", "google.co.uk/search?*porn*", "bing.com/search?*porn*",
+                        "duckduckgo.com/*porn*", "search.brave.com/search?*porn*", "search.yahoo.com/*porn*"
+                    });
+                }
+
                 key.DeleteSubKeyTree("URLBlocklist", throwOnMissingSubKey: false);
-                if (imgBlockOn)
+                key.DeleteSubKeyTree("URLAllowlist", throwOnMissingSubKey: false);
+                if (blockPatterns.Count > 0)
                 {
                     using var blockKey = key.CreateSubKey("URLBlocklist", writable: true);
                     if (blockKey != null)
                     {
-                        for (int i = 0; i < imageVideoPatterns.Length; i++)
-                        {
-                            blockKey.SetValue((i + 1).ToString(), imageVideoPatterns[i], RegistryValueKind.String);
-                        }
+                        for (int i = 0; i < blockPatterns.Count; i++)
+                            blockKey.SetValue((i + 1).ToString(), blockPatterns[i], RegistryValueKind.String);
+                    }
+                    if (pornOn)
+                    {
+                        using var allowKey = key.CreateSubKey("URLAllowlist", writable: true);
+                        allowKey?.SetValue("1", "jw.org", RegistryValueKind.String);
                     }
                 }
             }

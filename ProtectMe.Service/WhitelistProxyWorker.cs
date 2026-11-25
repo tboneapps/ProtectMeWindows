@@ -78,7 +78,7 @@ public sealed class WhitelistProxyWorker : BackgroundService
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
                         if (cfg.WhitelistOnlyWebsites ||
-                            (cfg.SafeBrowsingEnabled && IsUnsafeOrAdultHost(host)) ||
+                            ((cfg.SafeBrowsingEnabled || cfg.BlockPornEnabled) && IsUnsafeOrAdultHost(host)) ||
                             (cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host)))
                         {
                             string domain = SecurityHelper.NormalizeDomain(host);

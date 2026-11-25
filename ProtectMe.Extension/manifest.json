@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "ProtectMe Companion",
+  "version": "1.0.0",
+  "description": "Renders blocked images and videos as clean solid black boxes when ProtectMe Safe Browsing is active.",
+  "icons": {
+    "128": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}

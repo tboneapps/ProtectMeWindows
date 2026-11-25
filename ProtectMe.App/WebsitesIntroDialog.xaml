@@ -1,0 +1,57 @@
+<Window x:Class="ProtectMe.App.WebsitesIntroDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Websites Pro — 7-Day Free Trial"
+        Width="390" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    <Border CornerRadius="26" BorderBrush="#99D4AF37" BorderThickness="1.5" Padding="24">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#2B2210" Offset="0"/>
+                <GradientStop Color="#14110B" Offset="0.5"/>
+                <GradientStop Color="#0A0A0A" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.Background>
+        <StackPanel>
+            <Image Source="pack://application:,,,/Assets/Images/protectme_icon.png" Width="68" Height="68" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+
+            <TextBlock Text="W E B S I T E S   P R O"
+                       FontFamily="{StaticResource CinzelFont}"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TitleGradientBrush}"
+                       HorizontalAlignment="Center"/>
+
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,14">
+                <Border Width="38" Height="1" Background="#77D4AF37" VerticalAlignment="Center"/>
+                <Rectangle Width="5" Height="5" Fill="{StaticResource GoldBrush}" Margin="8,0" RenderTransformOrigin="0.5,0.5">
+                    <Rectangle.RenderTransform><RotateTransform Angle="45"/></Rectangle.RenderTransform>
+                </Rectangle>
+                <Border Width="38" Height="1" Background="#77D4AF37" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <TextBlock Foreground="{StaticResource InkBrush}" Opacity="0.88" FontSize="12.5" TextAlignment="Center" TextWrapping="Wrap" Margin="4,0,4,14">
+                <Run Text="Blocking apps, offline mode, schedules &amp; password protection will always be "/>
+                <Run Text="100% free forever" Foreground="{StaticResource GoldLightBrush}" FontWeight="Bold"/>
+                <Run Text=" to protect yourself. Websites is the only premium section."/>
+            </TextBlock>
+
+            <Border Background="#110F0A" BorderBrush="#3B311E" BorderThickness="1" CornerRadius="16" Padding="16" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="WHAT'S INCLUDED (£10 / YEAR)" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,10"/>
+                    <TextBlock Text="✓  Whitelist-Only Website &amp; Webpage Protection" Foreground="{StaticResource InkBrush}" FontSize="12" Margin="0,0,0,7"/>
+                    <TextBlock Text="✓  Safe Browsing (black-box images, no videos &amp; no downloads)" Foreground="{StaticResource InkBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                    <TextBlock Text="✓  Block All Pornography Websites &amp; Searches (jw.org allowed)" Foreground="{StaticResource InkBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                    <TextBlock Text="✓  Block Image &amp; Video Search across all engines" Foreground="{StaticResource InkBrush}" FontSize="12"/>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Try Free for 7 Days  →" Style="{StaticResource GoldButton}" Margin="0,0,0,12" Click="StartTrial_Click"/>
+            <Button Content="Remind me later" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontSize="12.5" Cursor="Hand" Click="Later_Click"/>
+        </StackPanel>
+    </Border>
+</Window>

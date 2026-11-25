@@ -31,6 +31,7 @@ public partial class MainWindow : Window
     private DateTime _lastNotifiedBlockUtc = DateTime.UtcNow;
     private bool _showingBlockPopup;
     private readonly Dictionary<string, DateTime> _dismissedDomains = new(StringComparer.OrdinalIgnoreCase);
+    private string _pendingUpdateUrl = string.Empty;
 
     public MainWindow()
     {
@@ -59,8 +60,44 @@ public partial class MainWindow : Window
                 permWin.ShowDialog();
                 await RefreshStateAsync();
             }
+            if (!_config.StrictPopupShown && !_config.HasPassword)
+            {
+                new StrictByDesignDialog { Owner = this }.ShowDialog();
+                _config.StrictPopupShown = true;
+                await PushConfigAsync();
+            }
             _refreshTimer.Start();
+            _ = CheckForAppUpdateAsync();
         };
+    }
+
+    private async Task CheckForAppUpdateAsync()
+    {
+        var (available, latestVer, url) = await UpdateService.CheckForUpdateAsync();
+        if (available)
+        {
+            _pendingUpdateUrl = url;
+            UpdateBannerText.Text = $"Update v{latestVer} is ready";
+            UpdateBanner.Visibility = Visibility.Visible;
+        }
+    }
+
+    private async void UpdateNowBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_pendingUpdateUrl)) return;
+        UpdateNowBtn.IsEnabled = false;
+        UpdateNowBtn.Content = "Downloading...";
+        bool ok = await UpdateService.DownloadAndLaunchInstallerAsync(_pendingUpdateUrl);
+        if (ok)
+        {
+            Application.Current.Shutdown();
+        }
+        else
+        {
+            UpdateNowBtn.Content = "Update Now";
+            UpdateNowBtn.IsEnabled = true;
+            MessageBox.Show("Could not download update. Check your internet connection.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async Task RefreshStateAsync()
@@ -75,12 +112,6 @@ public partial class MainWindow : Window
         {
             _config = ConfigStore.Load();
             _serviceRunning = false;
-        }
-
-        if (!_config.TrialStartedUtc.HasValue)
-        {
-            _config.TrialStartedUtc = DateTime.UtcNow;
-            await PushConfigAsync();
         }
 
         _config.BlockedApps = InstalledAppScanner.ScanInstalledApps(_config.BlockedApps);
@@ -402,6 +433,15 @@ public partial class MainWindow : Window
         SafeBrowsingPillText.Text = sbOn ? "On" : "Off";
         SafeBrowsingPillText.Foreground = sbOn ? new SolidColorBrush(Color.FromRgb(10, 10, 10)) : (Brush)FindResource("MutedBrush");
 
+        bool pornOn = _config.BlockPornEnabled;
+        BlockPornCard.BorderBrush = (Brush)FindResource(pornOn ? "GoldBrush" : "CardBorderBrush");
+        BlockPornCard.Background = new SolidColorBrush(pornOn ? Color.FromRgb(31, 26, 15) : Color.FromRgb(18, 18, 18));
+        BlockPornIconRing.BorderBrush = (Brush)FindResource(pornOn ? "GoldBrush" : "CardBorderBrush");
+        BlockPornIconText.Foreground = (Brush)FindResource(pornOn ? "GoldLightBrush" : "MutedBrush");
+        BlockPornPill.Background = pornOn ? (Brush)FindResource("GoldGradientBrush") : new SolidColorBrush(Color.FromRgb(34, 32, 28));
+        BlockPornPillText.Text = pornOn ? "On" : "Off";
+        BlockPornPillText.Foreground = pornOn ? new SolidColorBrush(Color.FromRgb(10, 10, 10)) : (Brush)FindResource("MutedBrush");
+
         bool imgOn = _config.BlockImageVideoSearch;
         BlockImagesIcon.Source = imgOn ? _blockImagesGold : _blockImagesGray;
         BlockImagesCard.BorderBrush = (Brush)FindResource(imgOn ? "GoldBrush" : "CardBorderBrush");
@@ -426,6 +466,23 @@ public partial class MainWindow : Window
         string body = _config.SafeBrowsingEnabled
             ? "• Browse the web freely\n• Images & thumbnails: black screen\n• Downloads blocked\n• Whitelist websites not limited"
             : "Images and downloads work as normal.";
+        new ToggleToastDialog(title, body) { Owner = this }.Show();
+    }
+
+    private async void BlockPornCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (_config.BlockPornEnabled && _config.IsProtectionLocked)
+        {
+            new ToggleToastDialog("Block All Porn: Locked on", "Cannot be turned off while Protection is ON.").Show();
+            return;
+        }
+        _config.BlockPornEnabled = !_config.BlockPornEnabled;
+        await PushConfigAsync();
+
+        string title = _config.BlockPornEnabled ? "Block All Porn: On" : "Block All Porn: Off";
+        string body = _config.BlockPornEnabled
+            ? "• All pornography websites blocked\n• Porn searches blocked across engines\n• jw.org remains allowed"
+            : "Pornography blocking is off.";
         new ToggleToastDialog(title, body) { Owner = this }.Show();
     }
 
@@ -1059,14 +1116,50 @@ public partial class MainWindow : Window
                     _config.LicenseKey = dlg.ActivatedKey;
                     _config.LicenseInstanceId = dlg.ActivatedInstanceId;
                     await PushConfigAsync();
-                    SwitchTab(3);
+                    if (!_config.IsPremiumActive && !_config.TrialStartedUtc.HasValue)
+        {
+            var intro = new WebsitesIntroDialog { Owner = this };
+            if (intro.ShowDialog() == true)
+            {
+                _config.WebsitesIntroShown = true;
+                _config.TrialStartedUtc = DateTime.UtcNow;
+                await PushConfigAsync();
+                SwitchTab(3);
+            }
+            return;
+        }
+        SwitchTab(3);
                 }
                 else if (dlg.PromoWeekGranted)
                 {
                     _config.TrialStartedUtc = DateTime.UtcNow;
                     await PushConfigAsync();
-                    SwitchTab(3);
+                    if (!_config.IsPremiumActive && !_config.TrialStartedUtc.HasValue)
+        {
+            var intro = new WebsitesIntroDialog { Owner = this };
+            if (intro.ShowDialog() == true)
+            {
+                _config.WebsitesIntroShown = true;
+                _config.TrialStartedUtc = DateTime.UtcNow;
+                await PushConfigAsync();
+                SwitchTab(3);
+            }
+            return;
+        }
+        SwitchTab(3);
                 }
+            }
+            return;
+        }
+        if (!_config.IsPremiumActive && !_config.TrialStartedUtc.HasValue)
+        {
+            var intro = new WebsitesIntroDialog { Owner = this };
+            if (intro.ShowDialog() == true)
+            {
+                _config.WebsitesIntroShown = true;
+                _config.TrialStartedUtc = DateTime.UtcNow;
+                await PushConfigAsync();
+                SwitchTab(3);
             }
             return;
         }

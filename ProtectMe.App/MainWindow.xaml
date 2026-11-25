@@ -31,7 +31,16 @@
         </Ellipse>
 
         <!-- Top Header (Hidden on Home; matches ProtectMe Android "K E Y S" + gold diamond ornament) -->
-        <StackPanel x:Name="TopHeader" Grid.Row="0" Margin="0,24,0,10" HorizontalAlignment="Center" Visibility="Collapsed">
+        <StackPanel Grid.Row="0">
+            <!-- In-App Update Available Banner (Only visible when a newer GitHub release is found) -->
+            <Border x:Name="UpdateBanner" Background="#241D0E" BorderBrush="{StaticResource GoldBrush}" BorderThickness="0,0,0,1" Padding="14,8" Visibility="Collapsed">
+                <Grid>
+                    <TextBlock x:Name="UpdateBannerText" Text="Update available" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <Button x:Name="UpdateNowBtn" Content="Update Now" HorizontalAlignment="Right" Style="{StaticResource GoldButton}" Padding="12,5" FontSize="11" Click="UpdateNowBtn_Click"/>
+                </Grid>
+            </Border>
+
+            <StackPanel x:Name="TopHeader" Margin="0,24,0,10" HorizontalAlignment="Center" Visibility="Collapsed">
             <TextBlock x:Name="PageHeaderTitle"
                        Text="P A S S W O R D"
                        FontFamily="{StaticResource CinzelFont}"
@@ -61,6 +70,7 @@
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
+            </StackPanel>
             </StackPanel>
         </StackPanel>
 
@@ -705,7 +715,7 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,10,0" VerticalAlignment="Center">
                                     <TextBlock Text="PROTECTION IS OFF" Foreground="{StaticResource GoldLightBrush}" FontSize="11" FontWeight="ExtraBold"/>
-                                    <TextBlock Text="Turn on Protection to activate these website rules." Foreground="{StaticResource InkBrush}" Opacity="0.85" FontSize="11" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                                    <TextBlock Text="Turn on Protection to activate." Foreground="{StaticResource InkBrush}" Opacity="0.85" FontSize="11" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <Button Grid.Column="1" Content="Turn On →" Style="{StaticResource GoldButton}" Padding="12,8" FontSize="11" VerticalAlignment="Center" Click="NavHome_Click"/>
                             </Grid>
@@ -728,32 +738,47 @@
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- Card 1: Safe Browsing -->
-                            <Border x:Name="SafeBrowsingCard" Grid.Column="0" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="SafeBrowsingCard_Click">
+                            <Border x:Name="SafeBrowsingCard" Grid.Column="0" CornerRadius="16" BorderThickness="1.4" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="10,12" Cursor="Hand" MouseLeftButtonDown="SafeBrowsingCard_Click">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
-                                        <Image x:Name="SafeBrowsingIcon" Width="58" Height="58" Stretch="Uniform"/>
+                                    <Border Width="58" Height="58" CornerRadius="29" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2.5" Margin="0,2,0,10">
+                                        <Image x:Name="SafeBrowsingIcon" Width="44" Height="44" Stretch="Uniform"/>
                                     </Border>
-                                    <TextBlock Text="Safe Browsing" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="13" TextAlignment="Center" Margin="0,0,0,12"/>
-                                    <Border x:Name="SafeBrowsingPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
-                                        <TextBlock x:Name="SafeBrowsingPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
+                                    <TextBlock Text="Safe&#x0a;Browsing" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="11" TextAlignment="Center" Margin="0,0,0,10"/>
+                                    <Border x:Name="SafeBrowsingPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="12" Padding="16,5" HorizontalAlignment="Center">
+                                        <TextBlock x:Name="SafeBrowsingPillText" Text="Off" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="11"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
 
-                            <!-- Card 2: Block Image & Video Search -->
-                            <Border x:Name="BlockImagesCard" Grid.Column="2" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="BlockImagesCard_Click">
+                            <!-- Card 2: Block All Porn -->
+                            <Border x:Name="BlockPornCard" Grid.Column="2" CornerRadius="16" BorderThickness="1.4" BorderBrush="{StaticResource CardBorderBrush}" Background="#121212" Padding="10,12" Cursor="Hand" MouseLeftButtonDown="BlockPornCard_Click">
                                 <StackPanel HorizontalAlignment="Center">
-                                    <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
-                                        <Image x:Name="BlockImagesIcon" Width="58" Height="58" Stretch="Uniform"/>
+                                    <Border x:Name="BlockPornIconRing" Width="58" Height="58" CornerRadius="29" Background="#0A0A0A" BorderBrush="#444" BorderThickness="2.5" Margin="0,2,0,10">
+                                        <TextBlock x:Name="BlockPornIconText" Text="⊘" FontSize="26" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
-                                    <TextBlock Text="Block Image &amp;&#x0a;Video Search" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="12" TextAlignment="Center" Margin="0,0,0,8"/>
-                                    <Border x:Name="BlockImagesPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
-                                        <TextBlock x:Name="BlockImagesPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
+                                    <TextBlock Text="Block All&#x0a;Porn" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="11" TextAlignment="Center" Margin="0,0,0,10"/>
+                                    <Border x:Name="BlockPornPill" Background="#22201C" CornerRadius="12" Padding="16,5" HorizontalAlignment="Center">
+                                        <TextBlock x:Name="BlockPornPillText" Text="Off" Foreground="{StaticResource MutedBrush}" FontWeight="ExtraBold" FontSize="11"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 3: Block Image & Video Search -->
+                            <Border x:Name="BlockImagesCard" Grid.Column="4" CornerRadius="16" BorderThickness="1.4" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="10,12" Cursor="Hand" MouseLeftButtonDown="BlockImagesCard_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="58" Height="58" CornerRadius="29" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="2.5" Margin="0,2,0,10">
+                                        <Image x:Name="BlockImagesIcon" Width="44" Height="44" Stretch="Uniform"/>
+                                    </Border>
+                                    <TextBlock Text="Block Image&#x0a;&amp; Video" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="11" TextAlignment="Center" Margin="0,0,0,10"/>
+                                    <Border x:Name="BlockImagesPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="12" Padding="16,5" HorizontalAlignment="Center">
+                                        <TextBlock x:Name="BlockImagesPillText" Text="Off" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="11"/>
                                     </Border>
                                 </StackPanel>
                             </Border>
