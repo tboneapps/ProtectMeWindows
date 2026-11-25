@@ -77,7 +77,9 @@ public sealed class WhitelistProxyWorker : BackgroundService
 
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
-                        if (cfg.WhitelistOnlyWebsites || (cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host)))
+                        if (cfg.WhitelistOnlyWebsites ||
+                            (cfg.SafeBrowsingEnabled && IsUnsafeOrAdultHost(host)) ||
+                            (cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host)))
                         {
                             string domain = SecurityHelper.NormalizeDomain(host);
                             _state.RecordBlockedEvent("Website", $"https://{host}", domain);
@@ -110,6 +112,14 @@ public sealed class WhitelistProxyWorker : BackgroundService
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
                         if (cfg.WhitelistOnlyWebsites)
+                        {
+                            string domain = SecurityHelper.NormalizeDomain(host);
+                            _state.RecordBlockedEvent("Website", target, domain);
+                            await SendBlockedHtmlResponseAsync(stream, target, domain, cfg.IsProtectionLocked, ct);
+                            return;
+                        }
+
+                        if (cfg.SafeBrowsingEnabled && IsUnsafeOrAdultHost(host))
                         {
                             string domain = SecurityHelper.NormalizeDomain(host);
                             _state.RecordBlockedEvent("Website", target, domain);
@@ -311,13 +321,32 @@ async function allowSite(scope) {{
         await stream.WriteAsync(SolidBlack1x1Png, ct);
     }
 
+    private static bool IsUnsafeOrAdultHost(string host)
+    {
+        string h = host.ToLowerInvariant();
+        string[] keywords =
+        {
+            "porn", "xxx", "xvideos", "xnxx", "xhamster", "redtube", "youporn", "tube8",
+            "spankbang", "brazzers", "onlyfans", "chaturbate", "stripchat", "bongacams",
+            "cam4", "livejasmin", "myfreecams", "eporner", "hqporner", "tnaflix", "hentai",
+            "rule34", "nhentai", "e-hentai", "pornhub", "xv-videos", "sex.com", "adult"
+        };
+        return keywords.Any(k => h.Contains(k, StringComparison.OrdinalIgnoreCase));
+    }
+
     private static bool IsImageOrVideoSearchHost(string host)
     {
         string h = host.ToLowerInvariant();
         return h.StartsWith("images.") || h.StartsWith("image.") || h.StartsWith("img.") ||
                h.StartsWith("videos.") || h.StartsWith("video.") ||
                h.Contains("images.search.yahoo") || h.Contains("video.search.yahoo") ||
-               h.Contains("image.baidu") || h.Contains("v.baidu");
+               h.Contains("image.baidu") || h.Contains("v.baidu") ||
+               // HTTPS image & video search thumbnail/media CDNs (Google, Bing, DuckDuckGo, YouTube, GIFs)
+               h.Contains("gstatic.com") && h.Contains("tbn") ||
+               h.Contains("mm.bing.net") || h.Equals("th.bing.com") ||
+               h.Contains("ytimg.com") || h.Contains("googlevideo.com") ||
+               h.Contains("vimeocdn.com") || h.Contains("giphy.com") || h.Contains("tenor.com") ||
+               h.Contains("external-content.duckduckgo.com");
     }
 
     private static bool IsImageOrVideoSearchUrl(string host, string rawUrl)

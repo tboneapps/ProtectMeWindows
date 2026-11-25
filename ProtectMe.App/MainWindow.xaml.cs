@@ -28,6 +28,8 @@ public partial class MainWindow : Window
     private readonly BitmapSource _blockImagesGold;
     private readonly BitmapSource _blockImagesGray;
     private bool _auraAnimating;
+    private DateTime _lastNotifiedBlockUtc = DateTime.UtcNow;
+    private bool _showingBlockPopup;
 
     public MainWindow()
     {
@@ -41,7 +43,7 @@ public partial class MainWindow : Window
         _blockImagesGold = new BitmapImage(new Uri("pack://application:,,,/Assets/Images/tb_block_images.png"));
         _blockImagesGray = new FormatConvertedBitmap(_blockImagesGold, PixelFormats.Gray8, null, 0);
 
-        _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _refreshTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1.5) };
         _refreshTimer.Tick += async (_, _) => await RefreshStateAsync();
 
         _holdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
@@ -80,16 +82,34 @@ public partial class MainWindow : Window
             await PushConfigAsync();
         }
 
-        if (_config.BlockedApps.Count == 0)
-        {
-            _config.BlockedApps = InstalledAppScanner.ScanInstalledApps(_config.BlockedApps);
-        }
-        if (_config.OfflineApps.Count == 0)
-        {
-            _config.OfflineApps = InstalledAppScanner.ScanInstalledApps(_config.OfflineApps);
-        }
+        _config.BlockedApps = InstalledAppScanner.ScanInstalledApps(_config.BlockedApps);
+        _config.OfflineApps = InstalledAppScanner.ScanInstalledApps(_config.OfflineApps);
 
         BindUi();
+        CheckForNewBlockedSitePopup();
+    }
+
+    private async void CheckForNewBlockedSitePopup()
+    {
+        if (_showingBlockPopup || !_config.IsProtectionLocked || !_config.WhitelistOnlyWebsites) return;
+        var newest = _config.RecentBlocked.FirstOrDefault(e => e.Kind == "Website" && e.TimestampUtc > _lastNotifiedBlockUtc);
+        if (newest == null) return;
+
+        _lastNotifiedBlockUtc = newest.TimestampUtc;
+        _showingBlockPopup = true;
+        try
+        {
+            var popup = new SiteBlockedPopup(newest.Domain);
+            if (popup.ShowDialog() == true && popup.SelectedScope.HasValue)
+            {
+                string val = popup.SelectedScope.Value == WhitelistScope.WholeWebsite ? newest.Domain : newest.Target;
+                await AddWhitelistItemAsync(val, popup.SelectedScope.Value);
+            }
+        }
+        finally
+        {
+            _showingBlockPopup = false;
+        }
     }
 
     private void BindUi()
@@ -132,16 +152,13 @@ public partial class MainWindow : Window
 
         var wholeSites = _config.WebsiteWhitelist.Where(w => w.Scope == WhitelistScope.WholeWebsite).ToList();
         var specificPages = _config.WebsiteWhitelist.Where(w => w.Scope == WhitelistScope.SpecificWebpage).ToList();
-        WhitelistTabWebsites.Content = $"Websites ({wholeSites.Count})";
-        WhitelistTabPages.Content = $"Webpages ({specificPages.Count})";
+        WhitelistSitesCountText.Text = $"{wholeSites.Count} {(wholeSites.Count == 1 ? "site" : "sites")}";
+        WhitelistPagesCountText.Text = $"{specificPages.Count} {(specificPages.Count == 1 ? "page" : "pages")}";
 
         WhitelistWebsitesControl.ItemsSource = null;
         WhitelistWebsitesControl.ItemsSource = wholeSites;
         WhitelistPagesControl.ItemsSource = null;
         WhitelistPagesControl.ItemsSource = specificPages;
-
-        RecentBlockedList.ItemsSource = null;
-        RecentBlockedList.ItemsSource = _config.RecentBlocked.Where(e => e.Kind == "Website").Take(15).ToList();
 
         PasswordToggleSwitch.IsChecked = _config.HasPassword;
         PasswordStatusText.Text = _config.HasPassword
@@ -157,6 +174,7 @@ public partial class MainWindow : Window
         OfflineAppsCountText.Text = $"{offlineCount} {(offlineCount == 1 ? "app" : "apps")}";
 
         BindScheduleUi();
+        BlockNewAppsToggle.IsChecked = _config.BlockNewInstalledApps;
     }
 
     private void StartAuraAnimation()
@@ -392,26 +410,28 @@ public partial class MainWindow : Window
         await PushConfigAsync();
     }
 
-    private void WhitelistTabWebsites_Click(object sender, RoutedEventArgs e)
+    private void OpenWhitelistWebsites_Click(object sender, RoutedEventArgs e)
     {
-        WhitelistWebsitesControl.Visibility = Visibility.Visible;
-        WhitelistPagesControl.Visibility = Visibility.Collapsed;
-        WhitelistTabWebsites.Style = (Style)FindResource("GoldButton");
-        WhitelistTabPages.Style = null;
-        WhitelistTabPages.Background = Brushes.Transparent;
-        WhitelistTabPages.BorderThickness = new Thickness(0);
-        WhitelistTabPages.Foreground = (Brush)FindResource("MutedBrush");
+        PageHeaderTitle.Text = "W E B S I T E S";
+        WebsitesHubView.Visibility = Visibility.Collapsed;
+        WhitelistWebsitesSubView.Visibility = Visibility.Visible;
+        WhitelistPagesSubView.Visibility = Visibility.Collapsed;
     }
 
-    private void WhitelistTabPages_Click(object sender, RoutedEventArgs e)
+    private void OpenWhitelistPages_Click(object sender, RoutedEventArgs e)
     {
-        WhitelistWebsitesControl.Visibility = Visibility.Collapsed;
-        WhitelistPagesControl.Visibility = Visibility.Visible;
-        WhitelistTabPages.Style = (Style)FindResource("GoldButton");
-        WhitelistTabWebsites.Style = null;
-        WhitelistTabWebsites.Background = Brushes.Transparent;
-        WhitelistTabWebsites.BorderThickness = new Thickness(0);
-        WhitelistTabWebsites.Foreground = (Brush)FindResource("MutedBrush");
+        PageHeaderTitle.Text = "W E B P A G E S";
+        WebsitesHubView.Visibility = Visibility.Collapsed;
+        WhitelistWebsitesSubView.Visibility = Visibility.Collapsed;
+        WhitelistPagesSubView.Visibility = Visibility.Visible;
+    }
+
+    private void BackToWebsites_Click(object sender, RoutedEventArgs e)
+    {
+        PageHeaderTitle.Text = "W E B S I T E S";
+        WebsitesHubView.Visibility = Visibility.Visible;
+        WhitelistWebsitesSubView.Visibility = Visibility.Collapsed;
+        WhitelistPagesSubView.Visibility = Visibility.Collapsed;
     }
 
     private void OpenWhitelistLink_Click(object sender, RoutedEventArgs e)
@@ -437,8 +457,8 @@ public partial class MainWindow : Window
 
     private async void AddSpecificWebpage_Click(object sender, RoutedEventArgs e)
     {
-        await AddWhitelistItemAsync(NewSiteInput.Text, WhitelistScope.SpecificWebpage);
-        NewSiteInput.Text = string.Empty;
+        await AddWhitelistItemAsync(NewPageInput.Text, WhitelistScope.SpecificWebpage);
+        NewPageInput.Text = string.Empty;
     }
 
     private async void AllowRecentSite_Click(object sender, RoutedEventArgs e)
@@ -456,8 +476,9 @@ public partial class MainWindow : Window
     private async Task AddWhitelistItemAsync(string rawValue, WhitelistScope scope)
     {
         if (string.IsNullOrWhiteSpace(rawValue)) return;
-        string? pw = _config.IsProtectionLocked ? PromptPassword("Whitelist Site", "Enter Master Password to add to whitelist.") : null;
-        if (_config.IsProtectionLocked && pw == null) return;
+        bool needPw = _config.IsProtectionLocked && _config.HasPassword;
+        string? pw = needPw ? PromptPassword("Whitelist Site", "Enter Master Password to add to whitelist.") : null;
+        if (needPw && pw == null) return;
 
         var entry = new WhitelistEntry { Value = rawValue.Trim(), Scope = scope };
 
@@ -490,8 +511,9 @@ public partial class MainWindow : Window
     private async void RemoveWhitelist_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string id) return;
-        string? pw = _config.IsProtectionLocked ? PromptPassword("Remove Whitelist", "Enter Master Password to remove this site.") : null;
-        if (_config.IsProtectionLocked && pw == null) return;
+        bool needPw = _config.IsProtectionLocked && _config.HasPassword;
+        string? pw = needPw ? PromptPassword("Remove Whitelist", "Enter Master Password to remove this site.") : null;
+        if (needPw && pw == null) return;
 
         if (_serviceRunning)
         {
@@ -807,6 +829,23 @@ public partial class MainWindow : Window
         OfflineAppsSubView.Visibility = Visibility.Collapsed;
         ScheduleSubView.Visibility = Visibility.Visible;
         BindScheduleUi();
+        BlockNewAppsToggle.IsChecked = _config.BlockNewInstalledApps;
+    }
+
+    private async void BlockNewAppsToggle_Click(object sender, RoutedEventArgs e)
+    {
+        bool turningOn = BlockNewAppsToggle.IsChecked == true;
+        if (!turningOn && _config.IsProtectionLocked)
+        {
+            string? pw = _config.HasPassword ? PromptPassword("Auto-Block New Apps", "Enter Master Password to turn this off.") : null;
+            if (_config.HasPassword && pw == null) { BlockNewAppsToggle.IsChecked = true; return; }
+            _config.BlockNewInstalledApps = false;
+            await PushConfigAsync(pw);
+            return;
+        }
+
+        _config.BlockNewInstalledApps = turningOn;
+        await PushConfigAsync();
     }
 
     private void BackToRules_Click(object sender, RoutedEventArgs e)
@@ -895,6 +934,11 @@ public partial class MainWindow : Window
         NavPassword.Foreground = index == 1 ? gold : muted;
         NavApps.Foreground = index == 2 ? gold : muted;
         NavWebsites.Foreground = index == 3 ? gold : muted;
+
+        DotHome.Visibility = index == 0 ? Visibility.Visible : Visibility.Hidden;
+        DotPassword.Visibility = index == 1 ? Visibility.Visible : Visibility.Hidden;
+        DotRules.Visibility = index == 2 ? Visibility.Visible : Visibility.Hidden;
+        DotWebsites.Visibility = index == 3 ? Visibility.Visible : Visibility.Hidden;
     }
 
     private async void OpenPremiumDialog_Click(object sender, RoutedEventArgs e)

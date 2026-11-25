@@ -10,6 +10,8 @@ public sealed class ProcessBlockerWorker : BackgroundService
     private readonly ProtectionStateManager _state;
     private readonly ILogger<ProcessBlockerWorker> _logger;
     private bool _lastProxyEnabled;
+    private HashSet<string>? _knownInstalledExes;
+    private DateTime _lastAppScanUtc = DateTime.MinValue;
 
     [DllImport("wininet.dll", SetLastError = true)]
     private static extern bool InternetSetOption(IntPtr hInternet, int dwOption, IntPtr lpBuffer, int dwBufferLength);
@@ -37,6 +39,11 @@ public sealed class ProcessBlockerWorker : BackgroundService
                 var cfg = _state.Current;
                 EnforceSystemProxy(cfg);
                 EnforceProcessBlocks(cfg);
+                if (cfg.BlockNewInstalledApps && (DateTime.UtcNow - _lastAppScanUtc).TotalSeconds >= 15)
+                {
+                    _lastAppScanUtc = DateTime.UtcNow;
+                    DetectNewlyInstalledApps();
+                }
             }
             catch (Exception ex)
             {
@@ -45,6 +52,70 @@ public sealed class ProcessBlockerWorker : BackgroundService
 
             await Task.Delay(600, stoppingToken);
         }
+    }
+
+    private void DetectNewlyInstalledApps()
+    {
+        var current = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        string[] roots =
+        {
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86)
+        };
+
+        foreach (var root in roots.Where(Directory.Exists))
+        {
+            try
+            {
+                foreach (var dir in Directory.EnumerateDirectories(root))
+                {
+                    if (dir.Contains("ProtectMe", StringComparison.OrdinalIgnoreCase)) continue;
+                    try
+                    {
+                        foreach (var exe in Directory.EnumerateFiles(dir, "*.exe", SearchOption.TopDirectoryOnly))
+                        {
+                            string name = Path.GetFileNameWithoutExtension(exe).ToLowerInvariant();
+                            if (!string.IsNullOrWhiteSpace(name) && !name.Contains("unins") && !name.Contains("setup"))
+                                current.Add(name);
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        if (_knownInstalledExes == null)
+        {
+            _knownInstalledExes = current;
+            return;
+        }
+
+        var newlyAdded = current.Except(_knownInstalledExes).ToList();
+        _knownInstalledExes = current;
+
+        if (newlyAdded.Count == 0) return;
+
+        _state.Update(c =>
+        {
+            foreach (var procName in newlyAdded)
+            {
+                var existing = c.BlockedApps.FirstOrDefault(a => a.ProcessName.Equals(procName, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    existing.IsEnabled = true;
+                }
+                else
+                {
+                    c.BlockedApps.Insert(0, new BlockedAppEntry
+                    {
+                        ProcessName = procName,
+                        DisplayName = procName,
+                        IsEnabled = true
+                    });
+                }
+            }
+        });
     }
 
     private void EnforceProcessBlocks(ProtectConfig cfg)
@@ -85,7 +156,9 @@ public sealed class ProcessBlockerWorker : BackgroundService
 
     private void EnforceSystemProxy(ProtectConfig cfg)
     {
-        bool shouldEnable = cfg.IsProtectionLocked && cfg.WhitelistOnlyWebsites && cfg.AntiTamper.EnforceSystemProxy;
+        bool shouldEnable = cfg.IsProtectionLocked &&
+                            cfg.AntiTamper.EnforceSystemProxy &&
+                            (cfg.WhitelistOnlyWebsites || cfg.SafeBrowsingEnabled || cfg.BlockImageVideoSearch);
         string proxyServer = $"127.0.0.1:{cfg.ProxyPort}";
 
         // Update all loaded user hives (works when running as LocalSystem)

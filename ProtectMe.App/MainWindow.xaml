@@ -131,9 +131,9 @@
                             Height="56"
                             Width="310"
                             CornerRadius="28"
-                            Background="#0E0E0E"
-                            BorderBrush="#9E8331"
-                            BorderThickness="1.2"
+                            Background="#1B170E"
+                            BorderBrush="{StaticResource GoldBrush}"
+                            BorderThickness="1.6"
                             ClipToBounds="True"
                             Cursor="Hand"
                             Margin="0,24,0,0"
@@ -195,7 +195,7 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <Border Grid.Column="0" Width="40" Height="40" CornerRadius="12" Background="#1F1A10" BorderBrush="#66D4AF37" BorderThickness="1" Margin="0,0,12,0">
-                                <TextBlock Text="🔑" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <TextBlock Text="🔑" FontSize="18" Foreground="{StaticResource GoldLightBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                             </Border>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Password" Foreground="{StaticResource GoldLightBrush}" FontFamily="{StaticResource ManropeFont}" FontSize="16" FontWeight="Bold"/>
@@ -290,21 +290,36 @@
                         </Grid>
 
                         <!-- Schedule Row Card -->
-                        <Border Style="{StaticResource PmCard}" Padding="16" Cursor="Hand" MouseLeftButtonDown="OpenSchedule_Click">
+                        <Border Style="{StaticResource PmCard}" Padding="16" Margin="0,0,0,14" Cursor="Hand" MouseLeftButtonDown="OpenSchedule_Click">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="10" Background="#161616" BorderBrush="#25221D" BorderThickness="1" Margin="0,0,14,0">
-                                    <TextBlock Text="📅" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Border Grid.Column="0" Width="40" Height="40" CornerRadius="10" Background="#1D1910" BorderBrush="#3B321F" BorderThickness="1" Margin="0,0,14,0">
+                                    <TextBlock Text="📅" FontSize="16" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                     <TextBlock Text="Schedule" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="15"/>
                                     <TextBlock x:Name="ScheduleSummaryText" Text="Off" Foreground="{StaticResource MutedBrush}" FontSize="12"/>
                                 </StackPanel>
                                 <TextBlock Grid.Column="2" Text="›" Foreground="{StaticResource MutedBrush}" FontSize="22" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Auto-Block Newly Installed Apps Card -->
+                        <Border Style="{StaticResource PmCard}" Padding="16">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                                    <TextBlock Text="Block newly installed apps" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="New apps can install, then auto-add to Blocked" Foreground="{StaticResource MutedBrush}" FontSize="11" TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <CheckBox x:Name="BlockNewAppsToggle" Grid.Column="1" Style="{StaticResource GoldToggleSwitch}" Click="BlockNewAppsToggle_Click"/>
                             </Grid>
                         </Border>
                     </StackPanel>
@@ -357,7 +372,10 @@
                                             <Button Background="Transparent" BorderThickness="0" Cursor="Hand" Margin="0,0,10,10" Tag="{Binding}" Click="UnblockAppTile_Click">
                                                 <Grid Width="52" Height="52">
                                                     <Border Width="48" Height="48" CornerRadius="24" Background="#161410" BorderBrush="{StaticResource GoldBrush}" BorderThickness="1.5" HorizontalAlignment="Left" VerticalAlignment="Bottom">
-                                                        <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource GoldLightBrush}" FontSize="10" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4"/>
+                                                        <Grid>
+                                                            <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource GoldLightBrush}" FontSize="9" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="4"/>
+                                                            <Image Source="{Binding ExecutablePath, Converter={StaticResource ExeToIconConverter}}" Width="32" Height="32" Stretch="Uniform"/>
+                                                        </Grid>
                                                     </Border>
                                                     <Border Width="18" Height="18" CornerRadius="9" Background="#2A1210" BorderBrush="{StaticResource DangerBrush}" BorderThickness="1" HorizontalAlignment="Right" VerticalAlignment="Top">
                                                         <TextBlock Text="×" Foreground="{StaticResource DangerBrush}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0"/>
@@ -398,7 +416,10 @@
                                         <StackPanel HorizontalAlignment="Center" Width="76">
                                             <Grid Width="56" Height="56" HorizontalAlignment="Center">
                                                 <Border Width="52" Height="52" CornerRadius="26" Background="#171717" BorderBrush="#4AD4AF37" BorderThickness="1.2">
-                                                    <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource InkBrush}" FontSize="10" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="5"/>
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource InkBrush}" FontSize="9" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="5"/>
+                                                        <Image Source="{Binding ExecutablePath, Converter={StaticResource ExeToIconConverter}}" Width="34" Height="34" Stretch="Uniform"/>
+                                                    </Grid>
                                                 </Border>
                                                 <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource GoldGradientBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                                                     <TextBlock Text="+" Foreground="#0A0A0A" FontSize="13" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0"/>
@@ -535,7 +556,10 @@
                                         <StackPanel HorizontalAlignment="Center" Width="76">
                                             <Grid Width="56" Height="56" HorizontalAlignment="Center">
                                                 <Border Width="52" Height="52" CornerRadius="26" Background="#171717" BorderBrush="#4AD4AF37" BorderThickness="1.2">
-                                                    <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource InkBrush}" FontSize="10" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="5"/>
+                                                    <Grid>
+                                                        <TextBlock Text="{Binding DisplayName}" Foreground="{StaticResource InkBrush}" FontSize="9" FontWeight="Bold" TextAlignment="Center" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="5"/>
+                                                        <Image Source="{Binding ExecutablePath, Converter={StaticResource ExeToIconConverter}}" Width="34" Height="34" Stretch="Uniform"/>
+                                                    </Grid>
                                                 </Border>
                                                 <Border Width="20" Height="20" CornerRadius="10" Background="{StaticResource GoldGradientBrush}" HorizontalAlignment="Right" VerticalAlignment="Bottom">
                                                     <TextBlock Text="+" Foreground="#0A0A0A" FontSize="13" FontWeight="ExtraBold" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,-2,0,0"/>
@@ -566,8 +590,8 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,14">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Width="38" Height="38" CornerRadius="10" Background="#161410" BorderBrush="#2E291F" BorderThickness="1" Margin="0,0,12,0">
-                                        <TextBlock Text="🕒" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="0" Width="38" Height="38" CornerRadius="10" Background="#1D1910" BorderBrush="#3B321F" BorderThickness="1" Margin="0,0,12,0">
+                                        <TextBlock Text="🕒" FontSize="16" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="Turn on at a set time" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
@@ -604,8 +628,8 @@
                             <StackPanel>
                                 <Grid Margin="0,0,0,16">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Width="38" Height="38" CornerRadius="10" Background="#161410" BorderBrush="#2E291F" BorderThickness="1" Margin="0,0,12,0">
-                                        <TextBlock Text="📅" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="0" Width="38" Height="38" CornerRadius="10" Background="#1D1910" BorderBrush="#3B321F" BorderThickness="1" Margin="0,0,12,0">
+                                        <TextBlock Text="📅" FontSize="16" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <TextBlock Text="Weekly schedule" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
@@ -655,61 +679,62 @@
                 </StackPanel>
             </ScrollViewer>
 
-            <!-- PAGE 4: WEBSITES (Tbone Browser Safe Browsing Cards + Locked Website Protection + Whitelist) -->
+            <!-- PAGE 4: WEBSITES (Hub with Safe Browsing + Website Protection + 2 Manage Cards: Websites | Webpages) -->
             <ScrollViewer x:Name="WebsitesPanel" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" Padding="20,10">
                 <StackPanel>
-                    <!-- 7-Day Free Trial / Premium Status Pill -->
-                    <Border x:Name="TrialBanner" Background="#1A160D" BorderBrush="#55D4AF37" BorderThickness="1" CornerRadius="14" Padding="12,8" Margin="0,0,0,14">
-                        <Grid>
-                            <TextBlock x:Name="TrialBannerText" Text="7-Day Free Trial · 7 days left" Foreground="{StaticResource GoldLightBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                            <Button x:Name="TrialBannerBtn" Content="Upgrade / Key" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="11" FontWeight="ExtraBold" Cursor="Hand" Click="OpenPremiumDialog_Click"/>
+                    <!-- WEBSITES HUB VIEW -->
+                    <StackPanel x:Name="WebsitesHubView" Visibility="Visible">
+                        <!-- 7-Day Free Trial / Premium Status Pill -->
+                        <Border x:Name="TrialBanner" Background="#1A160D" BorderBrush="#55D4AF37" BorderThickness="1" CornerRadius="14" Padding="12,8" Margin="0,0,0,14">
+                            <Grid>
+                                <TextBlock x:Name="TrialBannerText" Text="7-Day Free Trial · 7 days left" Foreground="{StaticResource GoldLightBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button x:Name="TrialBannerBtn" Content="Upgrade / Key" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="11" FontWeight="ExtraBold" Cursor="Hand" Click="OpenPremiumDialog_Click"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Tbone Browser SAFE BROWSING 2-Card Row -->
+                        <StackPanel HorizontalAlignment="Center" Margin="0,0,0,12">
+                            <TextBlock Text="S A F E   B R O W S I N G" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
+                            <Border Width="42" Height="1.5" Background="{StaticResource GoldBrush}" Margin="0,5,0,0" Opacity="0.7"/>
+                        </StackPanel>
+
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Card 1: Safe Browsing -->
+                            <Border x:Name="SafeBrowsingCard" Grid.Column="0" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="SafeBrowsingCard_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
+                                        <Image x:Name="SafeBrowsingIcon" Width="58" Height="58" Stretch="Uniform"/>
+                                    </Border>
+                                    <TextBlock Text="Safe Browsing" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="13" TextAlignment="Center" Margin="0,0,0,12"/>
+                                    <Border x:Name="SafeBrowsingPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
+                                        <TextBlock x:Name="SafeBrowsingPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Card 2: Block Image & Video Search -->
+                            <Border x:Name="BlockImagesCard" Grid.Column="2" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="BlockImagesCard_Click">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
+                                        <Image x:Name="BlockImagesIcon" Width="58" Height="58" Stretch="Uniform"/>
+                                    </Border>
+                                    <TextBlock Text="Block Image &amp;&#x0a;Video Search" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="12" TextAlignment="Center" Margin="0,0,0,8"/>
+                                    <Border x:Name="BlockImagesPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
+                                        <TextBlock x:Name="BlockImagesPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
                         </Grid>
-                    </Border>
 
-                    <!-- Tbone Browser SAFE BROWSING 2-Card Row -->
-                    <StackPanel HorizontalAlignment="Center" Margin="0,0,0,12">
-                        <TextBlock Text="S A F E   B R O W S I N G" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="ExtraBold" HorizontalAlignment="Center"/>
-                        <Border Width="42" Height="1.5" Background="{StaticResource GoldBrush}" Margin="0,5,0,0" Opacity="0.7"/>
-                    </StackPanel>
-
-                    <Grid Margin="0,0,0,16">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="12"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <!-- Card 1: Safe Browsing -->
-                        <Border x:Name="SafeBrowsingCard" Grid.Column="0" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="SafeBrowsingCard_Click">
-                            <StackPanel HorizontalAlignment="Center">
-                                <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
-                                    <Image x:Name="SafeBrowsingIcon" Width="58" Height="58" Stretch="Uniform"/>
-                                </Border>
-                                <TextBlock Text="Safe Browsing" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="13" TextAlignment="Center" Margin="0,0,0,12"/>
-                                <Border x:Name="SafeBrowsingPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="SafeBrowsingPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Card 2: Block Image & Video Search -->
-                        <Border x:Name="BlockImagesCard" Grid.Column="2" CornerRadius="18" BorderThickness="1.5" BorderBrush="{StaticResource GoldBrush}" Background="#1F1A0F" Padding="14" Cursor="Hand" MouseLeftButtonDown="BlockImagesCard_Click">
-                            <StackPanel HorizontalAlignment="Center">
-                                <Border Width="76" Height="76" CornerRadius="38" Background="#0A0A0A" BorderBrush="{StaticResource GoldBrush}" BorderThickness="3" Margin="0,2,0,12">
-                                    <Image x:Name="BlockImagesIcon" Width="58" Height="58" Stretch="Uniform"/>
-                                </Border>
-                                <TextBlock Text="Block Image &amp;&#x0a;Video Search" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="12" TextAlignment="Center" Margin="0,0,0,8"/>
-                                <Border x:Name="BlockImagesPill" Background="{StaticResource GoldGradientBrush}" CornerRadius="14" Padding="22,6" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="BlockImagesPillText" Text="On" Foreground="#0A0A0A" FontWeight="ExtraBold" FontSize="12"/>
-                                </Border>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <!-- Website Protection Master ON/OFF + Whitelist Add -->
-                    <Border Style="{StaticResource PmCard}" Margin="0,0,0,14">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,12">
+                        <!-- Website Protection Master ON/OFF Card -->
+                        <Border Style="{StaticResource PmCard}" Padding="16" Margin="0,0,0,20">
+                            <Grid>
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0" Margin="0,0,10,0">
                                     <TextBlock Text="Website Protection" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14"/>
@@ -717,127 +742,169 @@
                                 </StackPanel>
                                 <CheckBox x:Name="WhitelistOnlyCheck" Grid.Column="1" Style="{StaticResource GoldToggleSwitch}" Click="WhitelistOnlyCheck_Click"/>
                             </Grid>
+                        </Border>
 
-                            <TextBox x:Name="NewSiteInput" Style="{StaticResource PmTextBox}" Margin="0,0,0,10" ToolTip="e.g. wikipedia.org or https://example.com/page"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="10"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="Allow Website" Style="{StaticResource GoldButton}" Padding="10,12" FontSize="13" Click="AddWholeWebsite_Click"/>
-                                <Button Grid.Column="2" Content="Allow Webpage" Style="{StaticResource OutlineGoldButton}" Padding="10,12" FontSize="13" Click="AddSpecificWebpage_Click"/>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                        <!-- WHITELIST Section Divider -->
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Height="1" Background="#2A261E" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Grid.Column="1" Text="W H I T E L I S T" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="ExtraBold"/>
+                            <Border Grid.Column="2" Height="1" Background="#2A261E" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </Grid>
 
-                    <Border Style="{StaticResource PmCard}" Margin="0,0,0,14">
-                        <StackPanel>
-                            <Grid Margin="0,0,0,8">
-                                <TextBlock Text="RECENT BLOCKED POPUPS" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <Button Content="Refresh" HorizontalAlignment="Right" Style="{StaticResource OutlineGoldButton}" Padding="10,5" FontSize="11" Click="Refresh_Click"/>
-                            </Grid>
-                            <ItemsControl x:Name="RecentBlockedList">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Domain}" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="13"/>
-                                                <TextBlock Text="{Binding Target}" Foreground="{StaticResource MutedBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Margin="0,0,0,8"/>
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="8"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <Button Grid.Column="0" Content="Allow Site" Style="{StaticResource GoldButton}" Padding="8,6" FontSize="12" Tag="{Binding}" Click="AllowRecentSite_Click"/>
-                                                    <Button Grid.Column="2" Content="Allow Page" Style="{StaticResource OutlineGoldButton}" Padding="8,6" FontSize="12" Tag="{Binding}" Click="AllowRecentPage_Click"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
+                        <!-- 2 Side-by-Side Manage Cards: Websites | Webpages (Same style as Blocked apps | Apps offline) -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                    <!-- Saved Whitelist: Clean Separated Websites | Webpages Switcher + Clickable Links -->
-                    <Border Style="{StaticResource PmCard}" Padding="16">
-                        <StackPanel>
-                            <TextBlock Text="S A V E D   W H I T E L I S T" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="ExtraBold" Margin="0,0,0,12"/>
-
-                            <!-- Segmented Pill Switcher: Websites | Webpages -->
-                            <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="14" Padding="4" Margin="0,0,0,12">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button x:Name="WhitelistTabWebsites" Grid.Column="0" Content="Websites (0)" Style="{StaticResource GoldButton}" Padding="8,8" FontSize="12" Click="WhitelistTabWebsites_Click"/>
-                                    <Button x:Name="WhitelistTabPages" Grid.Column="1" Content="Webpages (0)" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Padding="8,8" Cursor="Hand" Click="WhitelistTabPages_Click"/>
-                                </Grid>
+                            <Border Grid.Column="0" Style="{StaticResource PmCard}" BorderBrush="#4AD4AF37" Padding="14">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="42" Height="42" CornerRadius="12" Background="#1D1910" BorderBrush="#3B321F" BorderThickness="1" Margin="0,4,0,12">
+                                        <TextBlock Text="🌐" FontSize="18" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Websites" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="WhitelistSitesCountText" Text="0 sites" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,14"/>
+                                    <Button Content="Manage" Style="{StaticResource OutlineGoldButton}" Padding="24,8" FontSize="13" Click="OpenWhitelistWebsites_Click"/>
+                                </StackPanel>
                             </Border>
 
-                            <!-- Whole Websites List (Tap link to open in browser) -->
-                            <ItemsControl x:Name="WhitelistWebsitesControl" Visibility="Visible">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="0,0,0,8">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand" Tag="{Binding Value}" Click="OpenWhitelistLink_Click">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="🌐" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{Binding Value}" Foreground="{StaticResource GoldLightBrush}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="  ↗" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="10,4" FontSize="13" Tag="{Binding Id}" Click="RemoveWhitelist_Click"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <Border Grid.Column="2" Style="{StaticResource PmCard}" BorderBrush="#4AD4AF37" Padding="14">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <Border Width="42" Height="42" CornerRadius="12" Background="#1D1910" BorderBrush="#3B321F" BorderThickness="1" Margin="0,4,0,12">
+                                        <TextBlock Text="📄" FontSize="18" Foreground="{StaticResource GoldBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <TextBlock Text="Webpages" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="WhitelistPagesCountText" Text="0 pages" Foreground="{StaticResource MutedBrush}" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,14"/>
+                                    <Button Content="Manage" Style="{StaticResource OutlineGoldButton}" Padding="24,8" FontSize="13" Click="OpenWhitelistPages_Click"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
 
-                            <!-- Specific Webpages List (Tap link to open in browser) -->
-                            <ItemsControl x:Name="WhitelistPagesControl" Visibility="Collapsed">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="0,0,0,8">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <Button Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand" Tag="{Binding Value}" Click="OpenWhitelistLink_Click">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="📄" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="{Binding Value}" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                                                        <TextBlock Text="  ↗" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </Button>
-                                                <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="10,4" FontSize="13" Tag="{Binding Id}" Click="RemoveWhitelist_Click"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
+                    <!-- SUB-VIEW: MANAGE WHITELISTED WEBSITES -->
+                    <StackPanel x:Name="WhitelistWebsitesSubView" Visibility="Collapsed">
+                        <Button Content="‹  Back to Websites" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Left" Padding="0,0,0,12" Cursor="Hand" Click="BackToWebsites_Click"/>
+                        <Border Style="{StaticResource PmCard}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="ADD ALLOWED WEBSITE" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewSiteInput" Grid.Column="0" Style="{StaticResource PmTextBox}" ToolTip="e.g. wikipedia.org"/>
+                                    <Button Grid.Column="2" Content="Allow" Style="{StaticResource GoldButton}" Padding="16,10" Click="AddWholeWebsite_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <ItemsControl x:Name="WhitelistWebsitesControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand" Tag="{Binding Value}" Click="OpenWhitelistLink_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="🌐" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Value}" Foreground="{StaticResource GoldLightBrush}" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="  ↗" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="10,4" FontSize="13" Tag="{Binding Id}" Click="RemoveWhitelist_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- SUB-VIEW: MANAGE WHITELISTED WEBPAGES -->
+                    <StackPanel x:Name="WhitelistPagesSubView" Visibility="Collapsed">
+                        <Button Content="‹  Back to Websites" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" FontWeight="SemiBold" HorizontalAlignment="Left" Padding="0,0,0,12" Cursor="Hand" Click="BackToWebsites_Click"/>
+                        <Border Style="{StaticResource PmCard}" Margin="0,0,0,14">
+                            <StackPanel>
+                                <TextBlock Text="ADD ALLOWED WEBPAGE URL" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <TextBox x:Name="NewPageInput" Grid.Column="0" Style="{StaticResource PmTextBox}" ToolTip="e.g. https://example.com/specific-page"/>
+                                    <Button Grid.Column="2" Content="Allow" Style="{StaticResource GoldButton}" Padding="16,10" Click="AddSpecificWebpage_Click"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <ItemsControl x:Name="WhitelistPagesControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#0A0A0A" BorderBrush="#25221D" BorderThickness="1" CornerRadius="12" Padding="12,10" Margin="0,0,0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Background="Transparent" BorderThickness="0" HorizontalContentAlignment="Left" Cursor="Hand" Tag="{Binding Value}" Click="OpenWhitelistLink_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="📄" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Value}" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="  ↗" Foreground="{StaticResource MutedBrush}" FontSize="11" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Grid.Column="1" Content="×" Style="{StaticResource DangerButton}" Padding="10,4" FontSize="13" Tag="{Binding Id}" Click="RemoveWhitelist_Click"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </StackPanel>
             </ScrollViewer>
         </Grid>
 
-        <!-- Bottom 4-Tab Navigation Bar (Exact Android Order: ProtectMe, Password, Apps, Websites) -->
-        <Border Grid.Row="2" Background="#0F0F0F" BorderBrush="#25221D" BorderThickness="0,1,0,0">
+        <!-- Bottom 4-Tab Navigation Bar (Polished Centered Vector Icons + Gold Active Dot) -->
+        <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#25221D" BorderThickness="0,1,0,0">
             <UniformGrid Columns="4">
-                <Button x:Name="NavHome" Content="🛡&#x0a;ProtectMe" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="Bold" FontSize="12" Cursor="Hand" Click="NavHome_Click"/>
-                <Button x:Name="NavPassword" Content="🔑&#x0a;Password" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Cursor="Hand" Click="NavPassword_Click"/>
-                <Button x:Name="NavApps" Content="☰&#x0a;Rules" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Cursor="Hand" Click="NavApps_Click"/>
-                <Button x:Name="NavWebsites" Content="🌐&#x0a;Websites" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Cursor="Hand" Click="NavWebsites_Click"/>
+                <!-- Tab 0: ProtectMe (Shield) -->
+                <Button x:Name="NavHome" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" Cursor="Hand" Click="NavHome_Click">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Viewbox Width="20" Height="20" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <Path Data="M12,2 L4,5.5 V11.5 C4,16.8 7.4,21.6 12,23 C16.6,21.6 20,16.8 20,11.5 V5.5 L12,2 Z"
+                                  Stroke="{Binding Foreground, ElementName=NavHome}" StrokeThickness="1.8" StrokeLineJoin="Round" Fill="Transparent"/>
+                        </Viewbox>
+                        <TextBlock Text="ProtectMe" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center"/>
+                        <Ellipse x:Name="DotHome" Width="4" Height="4" Fill="{StaticResource GoldBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Visible"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Tab 1: Password (Key) -->
+                <Button x:Name="NavPassword" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" Cursor="Hand" Click="NavPassword_Click">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Viewbox Width="20" Height="20" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <Path Data="M7.5,14.5 A4.5,4.5 0 1,1 11.7,10 H21 V13 H19 V15 H16 V13 H11.7 A4.5,4.5 0 0,1 7.5,14.5 Z"
+                                  Stroke="{Binding Foreground, ElementName=NavPassword}" StrokeThickness="1.8" StrokeLineJoin="Round" Fill="Transparent"/>
+                        </Viewbox>
+                        <TextBlock Text="Password" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center"/>
+                        <Ellipse x:Name="DotPassword" Width="4" Height="4" Fill="{StaticResource GoldBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Hidden"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Tab 2: Rules (Checklist) -->
+                <Button x:Name="NavApps" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" Cursor="Hand" Click="NavApps_Click">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Viewbox Width="20" Height="20" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <Path Data="M4,7 L6.5,9.5 L10,5.5 M13,7.5 H20 M4,15.5 L6.5,18 L10,14 M13,16 H20"
+                                  Stroke="{Binding Foreground, ElementName=NavApps}" StrokeThickness="1.8" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="Transparent"/>
+                        </Viewbox>
+                        <TextBlock Text="Rules" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center"/>
+                        <Ellipse x:Name="DotRules" Width="4" Height="4" Fill="{StaticResource GoldBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Hidden"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Tab 3: Websites (Globe) -->
+                <Button x:Name="NavWebsites" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" Cursor="Hand" Click="NavWebsites_Click">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Viewbox Width="20" Height="20" HorizontalAlignment="Center" Margin="0,0,0,4">
+                            <Path Data="M12,2 A10,10 0 1,0 12,22 A10,10 0 1,0 12,2 Z M2.5,12 H21.5 M12,2 C15,5 15,19 12,22 M12,2 C9,5 9,19 12,22"
+                                  Stroke="{Binding Foreground, ElementName=NavWebsites}" StrokeThickness="1.7" Fill="Transparent"/>
+                        </Viewbox>
+                        <TextBlock Text="Websites" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center"/>
+                        <Ellipse x:Name="DotWebsites" Width="4" Height="4" Fill="{StaticResource GoldBrush}" HorizontalAlignment="Center" Margin="0,4,0,0" Visibility="Hidden"/>
+                    </StackPanel>
+                </Button>
             </UniformGrid>
         </Border>
     </Grid>

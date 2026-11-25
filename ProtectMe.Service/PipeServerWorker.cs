@@ -139,6 +139,7 @@ public sealed class PipeServerWorker : BackgroundService
                     c.LicenseKey = req.Config.LicenseKey;
                     c.LicenseInstanceId = req.Config.LicenseInstanceId;
                     c.AntiTamper = req.Config.AntiTamper;
+                    c.BlockNewInstalledApps = req.Config.BlockNewInstalledApps;
                     c.BlockedApps = req.Config.BlockedApps;
                     c.OfflineApps = req.Config.OfflineApps;
                     c.SetTimeEnabled = req.Config.SetTimeEnabled;

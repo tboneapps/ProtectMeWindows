@@ -1,0 +1,48 @@
+<Window x:Class="ProtectMe.App.SiteBlockedPopup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ProtectMe — Site Blocked"
+        Width="380" Height="340"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    <Border CornerRadius="24" BorderBrush="#88D4AF37" BorderThickness="1.4" Padding="24">
+        <Border.Background>
+            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#241E12" Offset="0"/>
+                <GradientStop Color="#0E0E0E" Offset="1"/>
+            </LinearGradientBrush>
+        </Border.Background>
+        <StackPanel VerticalAlignment="Center">
+            <Image Source="pack://application:,,,/Assets/Images/protectme_icon.png" Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+            <TextBlock Text="S I T E   B L O C K E D"
+                       FontFamily="{StaticResource CinzelFont}"
+                       FontSize="18"
+                       FontWeight="SemiBold"
+                       Foreground="{StaticResource TitleGradientBrush}"
+                       HorizontalAlignment="Center"/>
+
+            <TextBlock x:Name="DomainText"
+                       Text="google.com"
+                       Foreground="{StaticResource GoldLightBrush}"
+                       FontSize="15"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Margin="0,10,0,4"/>
+
+            <TextBlock Text="Would you like to add this to your whitelist?"
+                       Foreground="{StaticResource MutedBrush}"
+                       FontSize="12"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,18"/>
+
+            <Button x:Name="AllowSiteBtn" Content="Allow Whole Website" Style="{StaticResource GoldButton}" Margin="0,0,0,10" Click="AllowSite_Click"/>
+            <Button Content="Allow This Webpage" Style="{StaticResource OutlineGoldButton}" Margin="0,0,0,12" Click="AllowPage_Click"/>
+            <Button Content="Dismiss" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontSize="12" Cursor="Hand" Click="Dismiss_Click"/>
+        </StackPanel>
+    </Border>
+</Window>
