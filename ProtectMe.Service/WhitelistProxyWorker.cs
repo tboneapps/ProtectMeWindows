@@ -77,7 +77,8 @@ public sealed class WhitelistProxyWorker : BackgroundService
 
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
-                        if (cfg.WhitelistOnlyWebsites ||
+                        bool blockByWhitelist = cfg.WhitelistOnlyWebsites && !cfg.SafeBrowsingEnabled;
+                        if (blockByWhitelist ||
                             ((cfg.SafeBrowsingEnabled || cfg.BlockPornEnabled) && IsUnsafeOrAdultHost(host)) ||
                             (cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host)))
                         {
@@ -111,7 +112,7 @@ public sealed class WhitelistProxyWorker : BackgroundService
                     // Whitelisted websites are NEVER affected by image/video/download/search limitations
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
-                        if (cfg.WhitelistOnlyWebsites)
+                        if (cfg.WhitelistOnlyWebsites && !cfg.SafeBrowsingEnabled)
                         {
                             string domain = SecurityHelper.NormalizeDomain(host);
                             _state.RecordBlockedEvent("Website", target, domain);

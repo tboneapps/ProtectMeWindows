@@ -285,7 +285,10 @@ public sealed class ProcessBlockerWorker : BackgroundService
                             string dom = SecurityHelper.NormalizeDomain(w.Value);
                             if (!string.IsNullOrWhiteSpace(dom))
                             {
-                                allowImgKey.SetValue(idx++.ToString(), $"[*.]{dom}", RegistryValueKind.String);
+                                allowImgKey.SetValue(idx++.ToString(), $"https://[*.]{dom}", RegistryValueKind.String);
+                                allowImgKey.SetValue(idx++.ToString(), $"http://[*.]{dom}", RegistryValueKind.String);
+                                if (dom.Equals("jw.org", StringComparison.OrdinalIgnoreCase))
+                                    allowImgKey.SetValue(idx++.ToString(), "https://[*.]jw-cdn.org", RegistryValueKind.String);
                             }
                         }
                     }
