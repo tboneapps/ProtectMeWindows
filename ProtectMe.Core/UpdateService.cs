@@ -6,14 +6,15 @@ namespace ProtectMe.Core;
 
 public static class UpdateService
 {
-    public const string CurrentVersion = "1.0.4";
+    public const string CurrentVersion = "1.0.5";
     private const string LatestReleaseApi = "https://api.github.com/repos/tboneapps/ProtectMeWindows/releases/latest";
 
     private static readonly HttpClient Http = CreateClient();
 
     private static HttpClient CreateClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        var handler = new HttpClientHandler { UseProxy = false };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("ProtectMeWindows/1.0");
         return client;
     }
@@ -90,6 +91,7 @@ public static class UpdateService
             Process.Start(new ProcessStartInfo
             {
                 FileName = tempExe,
+                Arguments = "--auto",
                 UseShellExecute = true
             });
             return true;

@@ -56,6 +56,10 @@ public partial class MainWindow : Window
         _holdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _holdTimer.Tick += HoldTimer_Tick;
 
+        // Paint saved state immediately before first frame so PROTECTED never flickers as UNPROTECTED
+        _config = ConfigStore.Load();
+        BindUi();
+
         Loaded += async (_, _) =>
         {
             await RefreshStateAsync();
@@ -82,11 +86,27 @@ public partial class MainWindow : Window
             }
             _refreshTimer.Start();
             _ = CheckForAppUpdateAsync();
+
+            var updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+            updateTimer.Tick += (_, _) =>
+            {
+                if (IsVisible && UpdateBanner.Visibility != Visibility.Visible)
+                    _ = CheckForAppUpdateAsync();
+            };
+            updateTimer.Start();
+        };
+        IsVisibleChanged += (_, _) =>
+        {
+            if (IsVisible && UpdateBanner.Visibility != Visibility.Visible && (DateTime.UtcNow - _lastUpdateCheckUtc).TotalSeconds >= 30)
+                _ = CheckForAppUpdateAsync();
         };
     }
 
+    private DateTime _lastUpdateCheckUtc = DateTime.MinValue;
+
     private async Task CheckForAppUpdateAsync()
     {
+        _lastUpdateCheckUtc = DateTime.UtcNow;
         var (available, latestVer, url) = await UpdateService.CheckForUpdateAsync();
         if (available)
         {

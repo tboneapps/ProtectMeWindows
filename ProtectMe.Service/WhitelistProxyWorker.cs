@@ -73,7 +73,7 @@ public sealed class WhitelistProxyWorker : BackgroundService
                     string host = hostPort[0];
                     int port = hostPort.Length > 1 && int.TryParse(hostPort[1], out int p) ? p : 443;
 
-                    bool isWhitelisted = SecurityHelper.IsUrlWhitelisted(string.Empty, host, cfg.WebsiteWhitelist);
+                    bool isWhitelisted = IsInternalProtectMeHost(host) || SecurityHelper.IsUrlWhitelisted(string.Empty, host, cfg.WebsiteWhitelist);
 
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
@@ -107,7 +107,7 @@ public sealed class WhitelistProxyWorker : BackgroundService
                         host = parsedUri.Host;
                     }
 
-                    bool isWhitelisted = SecurityHelper.IsUrlWhitelisted(target, host, cfg.WebsiteWhitelist);
+                    bool isWhitelisted = IsInternalProtectMeHost(host) || SecurityHelper.IsUrlWhitelisted(target, host, cfg.WebsiteWhitelist);
 
                     // Whitelisted websites are NEVER affected by image/video/download/search limitations
                     if (cfg.IsProtectionLocked && !isWhitelisted)
@@ -175,6 +175,14 @@ public sealed class WhitelistProxyWorker : BackgroundService
                 // Connection reset / client closed
             }
         }
+    }
+
+    private static bool IsInternalProtectMeHost(string host)
+    {
+        if (string.IsNullOrWhiteSpace(host)) return false;
+        string d = host.Split(':')[0].ToLowerInvariant();
+        return d is "api.github.com" or "objects.githubusercontent.com" or "release-assets.githubusercontent.com" or "api.gumroad.com"
+            || d.EndsWith(".githubusercontent.com", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task HandleWhitelistApiAsync(NetworkStream stream, string[] headerLines, CancellationToken ct)

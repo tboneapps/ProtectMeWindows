@@ -10,10 +10,16 @@ public partial class MainWindow : Window
 {
     private const string InstallDir = @"C:\Program Files\ProtectMe";
     private bool _installed;
+    private readonly bool _autoMode;
 
     public MainWindow()
     {
         InitializeComponent();
+        _autoMode = Environment.GetCommandLineArgs().Any(a => a.Equals("--auto", StringComparison.OrdinalIgnoreCase));
+        if (_autoMode)
+        {
+            Loaded += (_, _) => ActionButton_Click(this, new RoutedEventArgs());
+        }
     }
 
     private async void ActionButton_Click(object sender, RoutedEventArgs e)
@@ -54,9 +60,27 @@ public partial class MainWindow : Window
             await RunCmdAsync("sc.exe", "delete ProtectMeService");
             await Task.Delay(1500);
 
+            StatusText.Text = "Cleaning up old versions...";
+            InstallProgress.Value = 40;
+            Directory.CreateDirectory(InstallDir);
+
+            // Clean up any leftover .old.* backups or stray root executables to save disk space
+            try
+            {
+                foreach (string oldFile in Directory.EnumerateFiles(InstallDir, "*.old.*", SearchOption.AllDirectories))
+                {
+                    try { File.Delete(oldFile); } catch { }
+                }
+                foreach (string stray in new[] { "ProtectMe.exe", "ProtectMe.Service.exe" })
+                {
+                    string strayPath = Path.Combine(InstallDir, stray);
+                    if (File.Exists(strayPath)) { try { File.Delete(strayPath); } catch { } }
+                }
+            }
+            catch { }
+
             StatusText.Text = "Extracting ProtectMe to C:\\Program Files\\ProtectMe...";
             InstallProgress.Value = 45;
-            Directory.CreateDirectory(InstallDir);
 
             using Stream? resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("ProtectMe-Payload.zip");
             if (resStream == null) throw new Exception("Embedded installer payload missing.");
@@ -105,6 +129,15 @@ public partial class MainWindow : Window
             ActionButton.Content = "Launch ProtectMe";
             ActionButton.IsEnabled = true;
             _installed = true;
+
+            if (_autoMode)
+            {
+                if (File.Exists(appExe))
+                {
+                    Process.Start(new ProcessStartInfo { FileName = appExe, WorkingDirectory = Path.GetDirectoryName(appExe), UseShellExecute = true });
+                }
+                Close();
+            }
         }
         catch (Exception ex)
         {
