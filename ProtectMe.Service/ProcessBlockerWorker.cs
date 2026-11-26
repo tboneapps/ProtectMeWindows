@@ -233,29 +233,29 @@ public sealed class ProcessBlockerWorker : BackgroundService
             @"SOFTWARE\Policies\Comodo\Dragon"
         };
 
-        // Valid Chromium URLBlocklist patterns (must start with host/domain, not leading '*')
+        // Valid Chromium URLBlocklist patterns (NO '*' wildcards inside query strings!)
         string[] imageVideoPatterns =
         {
             // Google (global & UK) Images & Videos
-            "google.com/search?*udm=2*", "google.com/search?*udm=7*",
-            "google.com/search?*tbm=isch*", "google.com/search?*tbm=vid*",
-            "google.com/imghp*", "google.com/imgres*", "google.com/videohp*",
-            "google.co.uk/search?*udm=2*", "google.co.uk/search?*udm=7*",
-            "google.co.uk/search?*tbm=isch*", "google.co.uk/search?*tbm=vid*",
-            "google.co.uk/imghp*", "google.co.uk/imgres*",
+            "google.com/search?udm=2", "google.com/search?udm=7",
+            "google.com/search?tbm=isch", "google.com/search?tbm=vid",
+            "google.com/imghp", "google.com/imgres", "google.com/videohp",
+            "google.co.uk/search?udm=2", "google.co.uk/search?udm=7",
+            "google.co.uk/search?tbm=isch", "google.co.uk/search?tbm=vid",
+            "google.co.uk/imghp", "google.co.uk/imgres",
             // Bing Images & Videos
-            "bing.com/images*", "bing.com/videos*",
+            "bing.com/images", "bing.com/videos",
             // Brave Search Images & Videos
-            "search.brave.com/images*", "search.brave.com/videos*",
+            "search.brave.com/images", "search.brave.com/videos",
             // DuckDuckGo Images & Videos
-            "duckduckgo.com/*iax=images*", "duckduckgo.com/*iax=videos*",
-            "duckduckgo.com/*ia=images*", "duckduckgo.com/*ia=videos*",
+            "duckduckgo.com/?iax=images", "duckduckgo.com/?iax=videos",
+            "duckduckgo.com/?ia=images", "duckduckgo.com/?ia=videos",
             // Yahoo, Yandex, Ecosia, Qwant, Startpage, Baidu
             "images.search.yahoo.com", "video.search.yahoo.com",
-            "yandex.com/images*", "yandex.com/video*", "yandex.ru/images*", "yandex.ru/video*",
-            "ecosia.org/images*", "ecosia.org/videos*",
-            "qwant.com/*t=images*", "qwant.com/*t=videos*",
-            "startpage.com/*cat=images*", "startpage.com/*cat=videos*",
+            "yandex.com/images", "yandex.com/video", "yandex.ru/images", "yandex.ru/video",
+            "ecosia.org/images", "ecosia.org/videos",
+            "qwant.com/?t=images", "qwant.com/?t=videos",
+            "startpage.com/sp/search?cat=images", "startpage.com/sp/search?cat=videos",
             "image.baidu.com", "v.baidu.com"
         };
 
@@ -266,10 +266,9 @@ public sealed class ProcessBlockerWorker : BackgroundService
                 using var key = Registry.LocalMachine.CreateSubKey(root, writable: true);
                 if (key == null) continue;
 
-                // Safe Browsing:
-                // 1. Force Google SafeSearch + YouTube Strict Restricted Mode
-                key.SetValue("ForceGoogleSafeSearch", safeOn ? 1 : 0, RegistryValueKind.DWord);
-                key.SetValue("ForceYouTubeRestrict", safeOn ? 2 : 0, RegistryValueKind.DWord);
+                // Safe Browsing & Pornography Blocker: Force Google SafeSearch + YouTube Strict Restricted Mode
+                key.SetValue("ForceGoogleSafeSearch", (safeOn || pornOn) ? 1 : 0, RegistryValueKind.DWord);
+                key.SetValue("ForceYouTubeRestrict", (safeOn || pornOn) ? 2 : 0, RegistryValueKind.DWord);
 
                 // 2. Block ALL images on non-whitelisted websites (DefaultImagesSetting = 2)
                 //    and allow images on whitelisted websites (ImagesAllowedForUrls)
@@ -318,8 +317,8 @@ public sealed class ProcessBlockerWorker : BackgroundService
                         "stripchat.com", "bongacams.com", "cam4.com", "livejasmin.com", "myfreecams.com",
                         "eporner.com", "hqporner.com", "tnaflix.com", "rule34.xxx", "nhentai.net", "e-hentai.org",
                         "sex.com", "xxx.com",
-                        "google.com/search?*porn*", "google.co.uk/search?*porn*", "bing.com/search?*porn*",
-                        "duckduckgo.com/*porn*", "search.brave.com/search?*porn*", "search.yahoo.com/*porn*"
+                        "google.com/search?q=porn", "google.co.uk/search?q=porn", "bing.com/search?q=porn",
+                        "duckduckgo.com/?q=porn", "search.brave.com/search?q=porn", "search.yahoo.com/search?p=porn"
                     });
                 }
 

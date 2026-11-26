@@ -35,6 +35,8 @@ public partial class MainWindow : Window
     private bool _isPinMode;
     private bool _showPasswords;
     private bool _syncingPw;
+    private string _pinBuffer = string.Empty;
+    private string _pinFirstEntry = string.Empty;
 
     public MainWindow()
     {
@@ -63,9 +65,18 @@ public partial class MainWindow : Window
                 permWin.ShowDialog();
                 await RefreshStateAsync();
             }
-            if (!_config.StrictPopupShown && !_config.HasPassword)
+            string strictFlag = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "ProtectMe", "strict_shown.flag");
+            if (!System.IO.File.Exists(strictFlag) && !_config.StrictPopupShown && !_config.HasPassword)
             {
                 new StrictByDesignDialog { Owner = this }.ShowDialog();
+                try
+                {
+                    System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(strictFlag)!);
+                    System.IO.File.WriteAllText(strictFlag, "1");
+                }
+                catch { }
                 _config.StrictPopupShown = true;
                 await PushConfigAsync();
             }
@@ -90,7 +101,27 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(_pendingUpdateUrl)) return;
         UpdateNowBtn.IsEnabled = false;
         UpdateNowBtn.Content = "Downloading...";
-        bool ok = await UpdateService.DownloadAndLaunchInstallerAsync(_pendingUpdateUrl);
+        UpdateProgressBar.Visibility = Visibility.Visible;
+        UpdateProgressText.Visibility = Visibility.Visible;
+
+        var progress = new Progress<(long Downloaded, long Total)>(p =>
+        {
+            double dlMb = p.Downloaded / (1024.0 * 1024.0);
+            if (p.Total > 0)
+            {
+                double totalMb = p.Total / (1024.0 * 1024.0);
+                double leftMb = Math.Max(0, totalMb - dlMb);
+                double pct = (p.Downloaded * 100.0) / p.Total;
+                UpdateProgressBar.Value = pct;
+                UpdateProgressText.Text = $"{dlMb:F1} MB / {totalMb:F1} MB ({pct:F0}%) · {leftMb:F1} MB left";
+            }
+            else
+            {
+                UpdateProgressText.Text = $"{dlMb:F1} MB downloaded...";
+            }
+        });
+
+        bool ok = await UpdateService.DownloadAndLaunchInstallerAsync(_pendingUpdateUrl, progress);
         if (ok)
         {
             Application.Current.Shutdown();
@@ -99,6 +130,8 @@ public partial class MainWindow : Window
         {
             UpdateNowBtn.Content = "Update Now";
             UpdateNowBtn.IsEnabled = true;
+            UpdateProgressBar.Visibility = Visibility.Collapsed;
+            UpdateProgressText.Visibility = Visibility.Collapsed;
             MessageBox.Show("Could not download update. Check your internet connection.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -147,14 +180,32 @@ public partial class MainWindow : Window
         }
     }
 
+    private static bool IsBackgroundApiOrCdn(string domain)
+    {
+        string d = domain.ToLowerInvariant();
+        string[] noisy =
+        {
+            "googleapis.com", "gstatic.com", "googleusercontent.com", "doubleclick.net",
+            "googlesyndication.com", "googleadservices.com", "googletagmanager.com",
+            "google-analytics.com", "googlevideo.com", "ytimg.com", "mm.bing.net",
+            "th.bing.com", "msftconnecttest.com", "windowsupdate.com", "microsoft.com",
+            "brave.com", "bravesoftware.com", "cloudfront.net", "akamaized.net",
+            "fastly.net", "cdn", "telemetry", "analytics", "metrics", "api.",
+            "clients1.google.com", "clients2.google.com", "clients3.google.com", "clients4.google.com",
+            "safebrowsing", "ocsp.", "crl.", "pki.", "accounts.google.com"
+        };
+        return noisy.Any(n => d.Contains(n, StringComparison.OrdinalIgnoreCase));
+    }
+
     private async void CheckForNewBlockedSitePopup()
     {
-        if (_showingBlockPopup || !_config.IsProtectionLocked || !_config.WhitelistOnlyWebsites) return;
+        if (_showingBlockPopup || !_config.IsProtectionLocked || !_config.WhitelistOnlyWebsites || _config.SafeBrowsingEnabled) return;
         if (!IsBrowserInForeground()) return;
         var newest = _config.RecentBlocked.FirstOrDefault(e => e.Kind == "Website" && e.TimestampUtc > _lastNotifiedBlockUtc);
         if (newest == null) return;
 
         _lastNotifiedBlockUtc = newest.TimestampUtc;
+        if (IsBackgroundApiOrCdn(newest.Domain)) return;
         if (_dismissedDomains.TryGetValue(newest.Domain, out var until) && until > DateTime.UtcNow)
             return;
 
@@ -446,7 +497,9 @@ public partial class MainWindow : Window
         BlockPornCard.BorderBrush = (Brush)FindResource(pornOn ? "GoldBrush" : "CardBorderBrush");
         BlockPornCard.Background = new SolidColorBrush(pornOn ? Color.FromRgb(31, 26, 15) : Color.FromRgb(18, 18, 18));
         BlockPornIconRing.BorderBrush = (Brush)FindResource(pornOn ? "GoldBrush" : "CardBorderBrush");
+        BlockPornInnerCircle.Stroke = (Brush)FindResource(pornOn ? "GoldBrush" : "MutedBrush");
         BlockPornIconText.Foreground = (Brush)FindResource(pornOn ? "GoldLightBrush" : "MutedBrush");
+        BlockPornSlash.Stroke = (Brush)FindResource(pornOn ? "GoldBrush" : "MutedBrush");
         BlockPornPill.Background = pornOn ? (Brush)FindResource("GoldGradientBrush") : new SolidColorBrush(Color.FromRgb(34, 32, 28));
         BlockPornPillText.Text = pornOn ? "On" : "Off";
         BlockPornPillText.Foreground = pornOn ? new SolidColorBrush(Color.FromRgb(10, 10, 10)) : (Brush)FindResource("MutedBrush");
@@ -482,16 +535,16 @@ public partial class MainWindow : Window
     {
         if (_config.BlockPornEnabled && _config.IsProtectionLocked)
         {
-            new ToggleToastDialog("Block All Porn: Locked on", "Cannot be turned off while Protection is ON.").Show();
+            new ToggleToastDialog("Pornography Blocker: Locked on", "Cannot be turned off while Protection is ON.").Show();
             return;
         }
         _config.BlockPornEnabled = !_config.BlockPornEnabled;
         await PushConfigAsync();
 
-        string title = _config.BlockPornEnabled ? "Block All Porn: On" : "Block All Porn: Off";
+        string title = _config.BlockPornEnabled ? "Pornography Blocker: On" : "Pornography Blocker: Off";
         string body = _config.BlockPornEnabled
-            ? "• All pornography websites blocked\n• Porn searches blocked across engines\n• jw.org remains allowed"
-            : "Pornography blocking is off.";
+            ? "Pornography Websites Blocked"
+            : "Pornography Blocker is off.";
         new ToggleToastDialog(title, body) { Owner = this }.Show();
     }
 
@@ -653,14 +706,18 @@ public partial class MainWindow : Window
     private void ModePassword_Click(object sender, RoutedEventArgs e)
     {
         _isPinMode = false;
+        ModePasswordBtn.ClearValue(BackgroundProperty);
+        ModePasswordBtn.ClearValue(ForegroundProperty);
+        ModePasswordBtn.ClearValue(BorderThicknessProperty);
         ModePasswordBtn.Style = (Style)FindResource("GoldButton");
+
         ModePinBtn.Style = null;
         ModePinBtn.Background = Brushes.Transparent;
         ModePinBtn.BorderThickness = new Thickness(0);
         ModePinBtn.Foreground = (Brush)FindResource("MutedBrush");
-        CurrentPwLabel.Text = "CURRENT PASSWORD";
-        NewPwLabel.Text = "NEW PASSWORD";
-        ConfirmPwLabel.Text = "CONFIRM PASSWORD";
+
+        PasswordFormPanel.Visibility = Visibility.Visible;
+        PinPadPanel.Visibility = Visibility.Collapsed;
         SavePasswordBtn.Content = _config.HasPassword ? "Update Password" : "Save Password";
         ValidatePasswordFields();
     }
@@ -668,16 +725,115 @@ public partial class MainWindow : Window
     private void ModePin_Click(object sender, RoutedEventArgs e)
     {
         _isPinMode = true;
+        ModePinBtn.ClearValue(BackgroundProperty);
+        ModePinBtn.ClearValue(ForegroundProperty);
+        ModePinBtn.ClearValue(BorderThicknessProperty);
         ModePinBtn.Style = (Style)FindResource("GoldButton");
+
         ModePasswordBtn.Style = null;
         ModePasswordBtn.Background = Brushes.Transparent;
         ModePasswordBtn.BorderThickness = new Thickness(0);
         ModePasswordBtn.Foreground = (Brush)FindResource("MutedBrush");
-        CurrentPwLabel.Text = "CURRENT PASSWORD / PIN";
-        NewPwLabel.Text = "NEW PIN (4–8 DIGITS)";
-        ConfirmPwLabel.Text = "CONFIRM PIN";
-        SavePasswordBtn.Content = _config.HasPassword ? "Update PIN" : "Save PIN";
-        ValidatePasswordFields();
+
+        PasswordFormPanel.Visibility = Visibility.Collapsed;
+        PinPadPanel.Visibility = Visibility.Visible;
+        ResetPinPad();
+    }
+
+    private void ResetPinPad()
+    {
+        _pinBuffer = string.Empty;
+        _pinFirstEntry = string.Empty;
+        PinPadStepLabel.Text = "ENTER 4-DIGIT PIN";
+        PinPadStatusText.Text = string.Empty;
+        UpdatePinDots();
+    }
+
+    private void UpdatePinDots()
+    {
+        var gold = (Brush)FindResource("GoldGradientBrush");
+        System.Windows.Shapes.Ellipse[] dots = { PinDot0, PinDot1, PinDot2, PinDot3 };
+        for (int i = 0; i < 4; i++)
+            dots[i].Fill = i < _pinBuffer.Length ? gold : Brushes.Transparent;
+    }
+
+    private async void PinDigit_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string d || _pinBuffer.Length >= 4) return;
+        _pinBuffer += d;
+        UpdatePinDots();
+
+        if (_pinBuffer.Length < 4) return;
+
+        if (string.IsNullOrEmpty(_pinFirstEntry))
+        {
+            _pinFirstEntry = _pinBuffer;
+            _pinBuffer = string.Empty;
+            PinPadStepLabel.Text = "CONFIRM 4-DIGIT PIN";
+            PinPadStatusText.Foreground = (Brush)FindResource("MutedBrush");
+            PinPadStatusText.Text = "Enter the same 4 digits again";
+            UpdatePinDots();
+        }
+        else if (_pinBuffer != _pinFirstEntry)
+        {
+            PinPadStatusText.Foreground = (Brush)FindResource("DangerBrush");
+            PinPadStatusText.Text = "PINs did not match — try again";
+            _pinFirstEntry = string.Empty;
+            _pinBuffer = string.Empty;
+            PinPadStepLabel.Text = "ENTER 4-DIGIT PIN";
+            UpdatePinDots();
+        }
+        else
+        {
+            string? currentPw = null;
+            if (_config.HasPassword)
+            {
+                currentPw = PromptPassword("Verify Current Key", "Enter your current password or PIN to save the new 4-digit PIN.");
+                if (currentPw == null) { ResetPinPad(); return; }
+            }
+
+            string newPin = _pinBuffer;
+            if (_serviceRunning)
+            {
+                var resp = await PipeClient.SendAsync(new PipeRequest { Action = "set_password", Password = currentPw, NewPassword = newPin });
+                if (resp is not { Success: true })
+                {
+                    PinPadStatusText.Foreground = (Brush)FindResource("DangerBrush");
+                    PinPadStatusText.Text = resp?.Message ?? "Could not save PIN.";
+                    _pinFirstEntry = string.Empty;
+                    _pinBuffer = string.Empty;
+                    PinPadStepLabel.Text = "ENTER 4-DIGIT PIN";
+                    UpdatePinDots();
+                    return;
+                }
+            }
+            else
+            {
+                var (hash, salt) = SecurityHelper.HashPassword(newPin);
+                _config.PasswordHash = hash;
+                _config.PasswordSalt = salt;
+                ConfigStore.Save(_config);
+            }
+
+            _pinFirstEntry = string.Empty;
+            _pinBuffer = string.Empty;
+            PinPadStepLabel.Text = "ENTER 4-DIGIT PIN";
+            PinPadStatusText.Foreground = (Brush)FindResource("GoldLightBrush");
+            PinPadStatusText.Text = "4-Digit PIN saved ✓";
+            UpdatePinDots();
+            await RefreshStateAsync();
+        }
+    }
+
+    private void PinClear_Click(object sender, RoutedEventArgs e) => ResetPinPad();
+
+    private void PinBackspace_Click(object sender, RoutedEventArgs e)
+    {
+        if (_pinBuffer.Length > 0)
+        {
+            _pinBuffer = _pinBuffer[..^1];
+            UpdatePinDots();
+        }
     }
 
     private void ToggleShowPw_Click(object sender, RoutedEventArgs e)

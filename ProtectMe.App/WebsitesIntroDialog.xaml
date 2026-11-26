@@ -45,7 +45,7 @@
                     <TextBlock Text="WHAT'S INCLUDED (£10 / YEAR)" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,10"/>
                     <TextBlock Text="✓  Whitelist-Only Website &amp; Webpage Protection" Foreground="{StaticResource InkBrush}" FontSize="12" Margin="0,0,0,7"/>
                     <TextBlock Text="✓  Safe Browsing (black-box images, no videos &amp; no downloads)" Foreground="{StaticResource InkBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
-                    <TextBlock Text="✓  Block All Pornography Websites &amp; Searches (jw.org allowed)" Foreground="{StaticResource InkBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
+                    <TextBlock Text="✓  Pornography Blocker" Foreground="{StaticResource InkBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,7"/>
                     <TextBlock Text="✓  Block Image &amp; Video Search across all engines" Foreground="{StaticResource InkBrush}" FontSize="12"/>
                 </StackPanel>
             </Border>

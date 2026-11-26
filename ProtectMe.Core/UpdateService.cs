@@ -6,7 +6,7 @@ namespace ProtectMe.Core;
 
 public static class UpdateService
 {
-    public const string CurrentVersion = "1.0.1";
+    public const string CurrentVersion = "1.0.2";
     private const string LatestReleaseApi = "https://api.github.com/repos/tboneapps/ProtectMeWindows/releases/latest";
 
     private static readonly HttpClient Http = CreateClient();
@@ -62,7 +62,9 @@ public static class UpdateService
         }
     }
 
-    public static async Task<bool> DownloadAndLaunchInstallerAsync(string downloadUrl)
+    public static async Task<bool> DownloadAndLaunchInstallerAsync(
+        string downloadUrl,
+        IProgress<(long Downloaded, long Total)>? progress = null)
     {
         try
         {
@@ -70,9 +72,19 @@ public static class UpdateService
             using var resp = await Http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
             resp.EnsureSuccessStatusCode();
 
+            long total = resp.Content.Headers.ContentLength ?? -1;
+            await using var src = await resp.Content.ReadAsStreamAsync();
             await using (var fs = new FileStream(tempExe, FileMode.Create, FileAccess.Write, FileShare.None))
             {
-                await resp.Content.CopyToAsync(fs);
+                byte[] buffer = new byte[81920];
+                long downloaded = 0;
+                int read;
+                while ((read = await src.ReadAsync(buffer)) > 0)
+                {
+                    await fs.WriteAsync(buffer.AsMemory(0, read));
+                    downloaded += read;
+                    progress?.Report((downloaded, total));
+                }
             }
 
             Process.Start(new ProcessStartInfo

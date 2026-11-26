@@ -34,10 +34,14 @@
         <StackPanel Grid.Row="0">
             <!-- In-App Update Available Banner (Only visible when a newer GitHub release is found) -->
             <Border x:Name="UpdateBanner" Background="#241D0E" BorderBrush="{StaticResource GoldBrush}" BorderThickness="0,0,0,1" Padding="14,8" Visibility="Collapsed">
-                <Grid>
-                    <TextBlock x:Name="UpdateBannerText" Text="Update available" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <Button x:Name="UpdateNowBtn" Content="Update Now" HorizontalAlignment="Right" Style="{StaticResource GoldButton}" Padding="12,5" FontSize="11" Click="UpdateNowBtn_Click"/>
-                </Grid>
+                <StackPanel>
+                    <Grid>
+                        <TextBlock x:Name="UpdateBannerText" Text="Update available" Foreground="{StaticResource GoldLightBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button x:Name="UpdateNowBtn" Content="Update Now" HorizontalAlignment="Right" Style="{StaticResource GoldButton}" Padding="12,5" FontSize="11" Click="UpdateNowBtn_Click"/>
+                    </Grid>
+                    <ProgressBar x:Name="UpdateProgressBar" Height="4" Minimum="0" Maximum="100" Value="0" Background="#14110A" Foreground="{StaticResource GoldBrush}" BorderThickness="0" Margin="0,8,0,4" Visibility="Collapsed"/>
+                    <TextBlock x:Name="UpdateProgressText" Text="" Foreground="{StaticResource MutedBrush}" FontSize="10.5" Visibility="Collapsed"/>
+                </StackPanel>
             </Border>
 
             <StackPanel x:Name="TopHeader" Margin="0,24,0,10" HorizontalAlignment="Center" Visibility="Collapsed">
@@ -216,44 +220,76 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <Button x:Name="ModePasswordBtn" Grid.Column="0" Content="Password" Style="{StaticResource GoldButton}" Padding="8,7" FontSize="12" Click="ModePassword_Click"/>
-                                    <Button x:Name="ModePinBtn" Grid.Column="1" Content="PIN (Digits)" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Padding="8,7" Cursor="Hand" Click="ModePin_Click"/>
+                                    <Button x:Name="ModePinBtn" Grid.Column="1" Content="4-Digit PIN" Background="Transparent" BorderThickness="0" Foreground="{StaticResource MutedBrush}" FontFamily="{StaticResource ManropeFont}" FontWeight="SemiBold" FontSize="12" Padding="8,7" Cursor="Hand" Click="ModePin_Click"/>
                                 </Grid>
                             </Border>
 
-                            <!-- Current Password / PIN (shown only if already set) -->
-                            <StackPanel x:Name="CurrentPwPanel" Visibility="Collapsed" Margin="0,0,0,12">
-                                <TextBlock x:Name="CurrentPwLabel" Text="CURRENT PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
-                                <Grid>
-                                    <PasswordBox x:Name="CurrentPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14"/>
-                                    <TextBox x:Name="CurrentPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14"/>
-                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
-                                </Grid>
+                            <!-- PASSWORD FORM PANEL -->
+                            <StackPanel x:Name="PasswordFormPanel" Visibility="Visible">
+                                <!-- Current Password / PIN (shown only if already set) -->
+                                <StackPanel x:Name="CurrentPwPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                                    <TextBlock x:Name="CurrentPwLabel" Text="CURRENT PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                    <Grid>
+                                        <PasswordBox x:Name="CurrentPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14"/>
+                                        <TextBox x:Name="CurrentPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14"/>
+                                        <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- New Password -->
+                                <StackPanel Margin="0,0,0,12">
+                                    <TextBlock x:Name="NewPwLabel" Text="NEW PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                    <Grid>
+                                        <PasswordBox x:Name="NewPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
+                                        <TextBox x:Name="NewPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
+                                        <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <!-- Confirm New Password -->
+                                <StackPanel Margin="0,0,0,10">
+                                    <TextBlock x:Name="ConfirmPwLabel" Text="CONFIRM PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
+                                    <Grid>
+                                        <PasswordBox x:Name="ConfirmPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
+                                        <TextBox x:Name="ConfirmPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
+                                        <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
+                                    </Grid>
+                                </StackPanel>
+
+                                <TextBlock x:Name="PwValidationText" Text="" FontSize="11.5" FontWeight="SemiBold" Margin="2,0,0,14" MinHeight="16"/>
+                                <Button x:Name="SavePasswordBtn" Content="Save Password" Style="{StaticResource GoldButton}" Click="SavePasswordForm_Click"/>
                             </StackPanel>
 
-                            <!-- New Password / PIN -->
-                            <StackPanel Margin="0,0,0,12">
-                                <TextBlock x:Name="NewPwLabel" Text="NEW PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
-                                <Grid>
-                                    <PasswordBox x:Name="NewPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
-                                    <TextBox x:Name="NewPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
-                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
-                                </Grid>
+                            <!-- 4-DIGIT GOLD PIN PAD PANEL -->
+                            <StackPanel x:Name="PinPadPanel" Visibility="Collapsed" HorizontalAlignment="Center" Width="260">
+                                <TextBlock x:Name="PinPadStepLabel" Text="ENTER 4-DIGIT PIN" Foreground="{StaticResource LabelGoldBrush}" FontSize="11" FontWeight="ExtraBold" HorizontalAlignment="Center" Margin="0,2,0,12"/>
+
+                                <!-- 4 Glowing Gold PIN Dots -->
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                                    <Ellipse x:Name="PinDot0" Width="16" Height="16" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Fill="Transparent" Margin="8,0"/>
+                                    <Ellipse x:Name="PinDot1" Width="16" Height="16" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Fill="Transparent" Margin="8,0"/>
+                                    <Ellipse x:Name="PinDot2" Width="16" Height="16" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Fill="Transparent" Margin="8,0"/>
+                                    <Ellipse x:Name="PinDot3" Width="16" Height="16" Stroke="{StaticResource GoldBrush}" StrokeThickness="1.5" Fill="Transparent" Margin="8,0"/>
+                                </StackPanel>
+
+                                <TextBlock x:Name="PinPadStatusText" Text="" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,10" MinHeight="16"/>
+
+                                <!-- 3x4 Number Pad -->
+                                <UniformGrid Columns="3" Rows="4">
+                                    <Button Content="1" Tag="1" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="2" Tag="2" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="3" Tag="3" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="4" Tag="4" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="5" Tag="5" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="6" Tag="6" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="7" Tag="7" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="8" Tag="8" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="9" Tag="9" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="C" Style="{StaticResource DangerButton}" Margin="5" Padding="0,12" FontSize="15" Click="PinClear_Click"/>
+                                    <Button Content="0" Tag="0" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="18" Click="PinDigit_Click"/>
+                                    <Button Content="⌫" Style="{StaticResource OutlineGoldButton}" Margin="5" Padding="0,12" FontSize="16" Click="PinBackspace_Click"/>
+                                </UniformGrid>
                             </StackPanel>
-
-                            <!-- Confirm New Password / PIN -->
-                            <StackPanel Margin="0,0,0,10">
-                                <TextBlock x:Name="ConfirmPwLabel" Text="CONFIRM PASSWORD" Foreground="{StaticResource LabelGoldBrush}" FontSize="10" FontWeight="ExtraBold" Margin="0,0,0,5"/>
-                                <Grid>
-                                    <PasswordBox x:Name="ConfirmPwBox" Background="#0A0A0A" Foreground="#F3E7C4" CaretBrush="#D4AF37" BorderBrush="#2A251C" BorderThickness="1" Padding="12,10,40,10" FontSize="14" PasswordChanged="PwField_Changed"/>
-                                    <TextBox x:Name="ConfirmPwPlain" Visibility="Collapsed" Style="{StaticResource PmTextBox}" Padding="12,10,40,10" FontSize="14" TextChanged="PwPlain_Changed"/>
-                                    <Button Content="👁" HorizontalAlignment="Right" Background="Transparent" BorderThickness="0" Foreground="{StaticResource GoldBrush}" FontSize="14" Padding="10,0" Cursor="Hand" Click="ToggleShowPw_Click"/>
-                                </Grid>
-                            </StackPanel>
-
-                            <!-- Live Match / Validation Feedback -->
-                            <TextBlock x:Name="PwValidationText" Text="" FontSize="11.5" FontWeight="SemiBold" Margin="2,0,0,14" MinHeight="16"/>
-
-                            <Button x:Name="SavePasswordBtn" Content="Save Password" Style="{StaticResource GoldButton}" Click="SavePasswordForm_Click"/>
                         </StackPanel>
                     </Border>
 
@@ -788,13 +824,20 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Card 2: Block All Porn -->
+                            <!-- Card 2: Pornography Blocker (XXX with Stop Ring & Slash) -->
                             <Border x:Name="BlockPornCard" Grid.Column="2" CornerRadius="16" BorderThickness="1.4" BorderBrush="{StaticResource CardBorderBrush}" Background="#121212" Padding="10,12" Cursor="Hand" MouseLeftButtonDown="BlockPornCard_Click">
                                 <StackPanel HorizontalAlignment="Center">
                                     <Border x:Name="BlockPornIconRing" Width="58" Height="58" CornerRadius="29" Background="#0A0A0A" BorderBrush="#444" BorderThickness="2.5" Margin="0,2,0,10">
-                                        <TextBlock x:Name="BlockPornIconText" Text="⊘" FontSize="26" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Grid Width="46" Height="46">
+                                            <!-- Inner Stop Circle -->
+                                            <Ellipse x:Name="BlockPornInnerCircle" Stroke="{StaticResource MutedBrush}" StrokeThickness="2.2" Margin="2"/>
+                                            <!-- Bold XXX -->
+                                            <TextBlock x:Name="BlockPornIconText" Text="XXX" FontFamily="{StaticResource CinzelFont}" FontSize="12" FontWeight="ExtraBold" Foreground="{StaticResource MutedBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            <!-- Diagonal Stop Slash -->
+                                            <Line x:Name="BlockPornSlash" X1="9" Y1="9" X2="37" Y2="37" Stroke="{StaticResource MutedBrush}" StrokeThickness="2.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                        </Grid>
                                     </Border>
-                                    <TextBlock Text="Block All&#x0a;Porn" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="11" TextAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="Pornography&#x0a;Blocker" Foreground="{StaticResource InkBrush}" FontWeight="Bold" FontSize="10.5" TextAlignment="Center" Margin="0,0,0,10"/>
                                     <Border x:Name="BlockPornPill" Background="#22201C" CornerRadius="12" Padding="16,5" HorizontalAlignment="Center">
                                         <TextBlock x:Name="BlockPornPillText" Text="Off" Foreground="{StaticResource MutedBrush}" FontWeight="ExtraBold" FontSize="11"/>
                                     </Border>
