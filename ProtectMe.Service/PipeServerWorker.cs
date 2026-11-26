@@ -186,6 +186,9 @@ public sealed class PipeServerWorker : BackgroundService
                             AddedUtc = DateTime.UtcNow
                         });
                     }
+                    // Clear any queued RecentBlocked entries for this domain so popup never re-triggers
+                    string normDom = SecurityHelper.NormalizeDomain(norm);
+                    c.RecentBlocked.RemoveAll(r => r.Domain.Equals(normDom, StringComparison.OrdinalIgnoreCase));
                 });
                 return new PipeResponse { Success = true, Message = "Added to whitelist.", Config = _state.GetSnapshot() };
 

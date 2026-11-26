@@ -150,7 +150,7 @@
                             BorderThickness="1.6"
                             ClipToBounds="True"
                             Cursor="Hand"
-                            Margin="0,24,0,0"
+                            Margin="0,20,0,0"
                             MouseLeftButtonDown="HoldPill_MouseDown"
                             MouseLeftButtonUp="HoldPill_MouseUp"
                             MouseLeave="HoldPill_MouseLeave">
@@ -170,6 +170,54 @@
                                        Foreground="{StaticResource GoldLightBrush}"
                                        HorizontalAlignment="Center"
                                        VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Quick Website Protection Card on Home Screen -->
+                    <Border x:Name="HomeWebsiteProtectionCard"
+                            Width="310"
+                            CornerRadius="18"
+                            Background="#14120E"
+                            BorderBrush="#4A3C1E"
+                            BorderThickness="1.2"
+                            Padding="16,14"
+                            Margin="0,20,0,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10" Background="#1F1A10" BorderBrush="#66D4AF37" BorderThickness="1" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <TextBlock Text="🌐" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Website Protection"
+                                               Foreground="{StaticResource GoldLightBrush}"
+                                               FontFamily="{StaticResource ManropeFont}"
+                                               FontWeight="Bold"
+                                               FontSize="14"/>
+                                    <TextBlock x:Name="HomeWebsiteLockIcon"
+                                               Text=" 🔒"
+                                               Foreground="{StaticResource GoldBrush}"
+                                               FontSize="12"
+                                               VerticalAlignment="Center"
+                                               Visibility="Collapsed"/>
+                                </StackPanel>
+                                <TextBlock x:Name="HomeWebsiteSubText"
+                                           Text="Block all sites except your whitelist"
+                                           Foreground="{StaticResource MutedBrush}"
+                                           FontFamily="{StaticResource ManropeFont}"
+                                           FontSize="11"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <CheckBox x:Name="HomeWebsiteProtectionCheck"
+                                      Grid.Column="2"
+                                      Style="{StaticResource GoldToggleSwitch}"
+                                      VerticalAlignment="Center"
+                                      Click="HomeWebsiteProtectionCheck_Click"/>
                         </Grid>
                     </Border>
 

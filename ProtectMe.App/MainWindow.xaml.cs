@@ -163,26 +163,38 @@ public partial class MainWindow : Window
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-    private static bool IsBrowserInForeground()
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+
+    private static string GetForegroundBrowserTitle()
     {
         try
         {
             IntPtr hwnd = GetForegroundWindow();
-            if (hwnd == IntPtr.Zero) return false;
+            if (hwnd == IntPtr.Zero) return string.Empty;
             GetWindowThreadProcessId(hwnd, out uint pid);
             using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
             string name = proc.ProcessName.ToLowerInvariant();
-            return name is "brave" or "chrome" or "msedge" or "firefox" or "opera" or "vivaldi";
+            if (name is not ("brave" or "chrome" or "msedge" or "firefox" or "opera" or "vivaldi"))
+                return string.Empty;
+
+            var sb = new System.Text.StringBuilder(512);
+            GetWindowText(hwnd, sb, sb.Capacity);
+            return sb.ToString();
         }
         catch
         {
-            return false;
+            return string.Empty;
         }
     }
 
     private static bool IsBackgroundApiOrCdn(string domain)
     {
         string d = domain.ToLowerInvariant();
+        // Ignore deep API/internal subdomains (e.g. foo-pa.clients6.google.com)
+        if (d.Count(c => c == '.') >= 3) return true;
+        if (d.Length > 34) return true;
+
         string[] noisy =
         {
             "googleapis.com", "gstatic.com", "googleusercontent.com", "doubleclick.net",
@@ -191,8 +203,8 @@ public partial class MainWindow : Window
             "th.bing.com", "msftconnecttest.com", "windowsupdate.com", "microsoft.com",
             "brave.com", "bravesoftware.com", "cloudfront.net", "akamaized.net",
             "fastly.net", "cdn", "telemetry", "analytics", "metrics", "api.",
-            "clients1.google.com", "clients2.google.com", "clients3.google.com", "clients4.google.com",
-            "safebrowsing", "ocsp.", "crl.", "pki.", "accounts.google.com"
+            "clients", "-pa.", "safebrowsing", "ocsp.", "crl.", "pki.", "accounts.google.com",
+            "static.", "assets.", "sentry.", "beacon", "push."
         };
         return noisy.Any(n => d.Contains(n, StringComparison.OrdinalIgnoreCase));
     }
@@ -200,12 +212,17 @@ public partial class MainWindow : Window
     private async void CheckForNewBlockedSitePopup()
     {
         if (_showingBlockPopup || !_config.IsProtectionLocked || !_config.WhitelistOnlyWebsites || _config.SafeBrowsingEnabled) return;
-        if (!IsBrowserInForeground()) return;
+        string browserTitle = GetForegroundBrowserTitle();
+        if (string.IsNullOrEmpty(browserTitle)) return;
+
         var newest = _config.RecentBlocked.FirstOrDefault(e => e.Kind == "Website" && e.TimestampUtc > _lastNotifiedBlockUtc);
         if (newest == null) return;
 
         _lastNotifiedBlockUtc = newest.TimestampUtc;
         if (IsBackgroundApiOrCdn(newest.Domain)) return;
+        // ONLY pop up if the blocked domain is literally the active tab's website in the browser title!
+        if (!browserTitle.Contains(newest.Domain, StringComparison.OrdinalIgnoreCase)) return;
+        if (SecurityHelper.IsUrlWhitelisted(newest.Target, newest.Domain, _config.WebsiteWhitelist)) return;
         if (_dismissedDomains.TryGetValue(newest.Domain, out var until) && until > DateTime.UtcNow)
             return;
 
@@ -217,6 +234,7 @@ public partial class MainWindow : Window
             {
                 string val = popup.SelectedScope.Value == WhitelistScope.WholeWebsite ? newest.Domain : newest.Target;
                 await AddWhitelistItemAsync(val, popup.SelectedScope.Value);
+                _dismissedDomains[newest.Domain] = DateTime.UtcNow.AddMinutes(10);
             }
             else
             {
@@ -226,6 +244,8 @@ public partial class MainWindow : Window
         }
         finally
         {
+            // Discard any queued browser retries that arrived while the popup was open
+            _lastNotifiedBlockUtc = DateTime.UtcNow;
             _showingBlockPopup = false;
         }
     }
@@ -258,6 +278,10 @@ public partial class MainWindow : Window
         ProtectionOffBanner.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
 
         WhitelistOnlyCheck.IsChecked = _config.WhitelistOnlyWebsites;
+        HomeWebsiteProtectionCheck.IsChecked = _config.WhitelistOnlyWebsites;
+        HomeWebsiteProtectionCard.BorderBrush = (Brush)FindResource(_config.WhitelistOnlyWebsites ? "GoldBrush" : "CardBorderBrush");
+        bool trialExpiredLocked = _config.TrialStartedUtc.HasValue && !LicenseService.HasWebsitesAccess(_config);
+        HomeWebsiteLockIcon.Visibility = trialExpiredLocked ? Visibility.Visible : Visibility.Collapsed;
         BindTboneWebsiteCards();
 
         int trialLeft = LicenseService.GetTrialDaysRemaining(_config);
@@ -566,14 +590,71 @@ public partial class MainWindow : Window
         new ToggleToastDialog(title, body) { Owner = this }.Show();
     }
 
+    private async void HomeWebsiteProtectionCheck_Click(object sender, RoutedEventArgs e)
+    {
+        bool turningOn = HomeWebsiteProtectionCheck.IsChecked == true;
+        await ToggleWebsiteProtectionAsync(turningOn);
+    }
+
     private async void WhitelistOnlyCheck_Click(object sender, RoutedEventArgs e)
     {
         bool turningOn = WhitelistOnlyCheck.IsChecked == true;
+        await ToggleWebsiteProtectionAsync(turningOn);
+    }
+
+    private async Task ToggleWebsiteProtectionAsync(bool turningOn)
+    {
         // Can switch ON while protection is ON, but CANNOT switch OFF until Protection is OFF!
         if (!turningOn && _config.IsProtectionLocked)
         {
             WhitelistOnlyCheck.IsChecked = true;
-            MessageBox.Show("Website Protection cannot be turned OFF while Protection is ON. Turn off Protection first.", "ProtectMe", MessageBoxButton.OK, MessageBoxImage.Information);
+            HomeWebsiteProtectionCheck.IsChecked = true;
+            new ToggleToastDialog("Website Protection: Locked on", "Cannot be turned off while Protection is ON.") { Owner = this }.Show();
+            return;
+        }
+
+        // If turning ON, check 7-day trial / Websites Pro license
+        if (turningOn && !LicenseService.HasWebsitesAccess(_config))
+        {
+            WhitelistOnlyCheck.IsChecked = false;
+            HomeWebsiteProtectionCheck.IsChecked = false;
+
+            if (!_config.TrialStartedUtc.HasValue && !_config.IsPremiumActive)
+            {
+                // First time: show radiant 24K Gold 7-day free trial intro popup
+                var intro = new WebsitesIntroDialog { Owner = this };
+                if (intro.ShowDialog() == true)
+                {
+                    _config.TrialStartedUtc = DateTime.UtcNow;
+                    _config.WebsitesIntroShown = true;
+                    _config.WhitelistOnlyWebsites = true;
+                    await PushConfigAsync();
+                    new ToggleToastDialog("Website Protection: On", "7-day free trial started! Only whitelisted websites are allowed.") { Owner = this }.Show();
+                }
+                return;
+            }
+
+            // 7-day trial expired: show beautiful 24K Gold upgrade / license key popup
+            var dlg = new PremiumDialog(0) { Owner = this };
+            if (dlg.ShowDialog() == true)
+            {
+                if (dlg.LicenseActivated)
+                {
+                    _config.IsPremiumActive = true;
+                    _config.LicenseKey = dlg.ActivatedKey;
+                    _config.LicenseInstanceId = dlg.ActivatedInstanceId;
+                    _config.WhitelistOnlyWebsites = true;
+                    await PushConfigAsync();
+                    new ToggleToastDialog("Website Protection: On", "Websites Pro activated! Only whitelisted websites are allowed.") { Owner = this }.Show();
+                }
+                else if (dlg.PromoWeekGranted)
+                {
+                    _config.TrialStartedUtc = DateTime.UtcNow;
+                    _config.WhitelistOnlyWebsites = true;
+                    await PushConfigAsync();
+                    new ToggleToastDialog("Website Protection: On", "Promo week activated! Only whitelisted websites are allowed.") { Owner = this }.Show();
+                }
+            }
             return;
         }
 
