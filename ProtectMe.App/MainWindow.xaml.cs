@@ -235,16 +235,26 @@ public partial class MainWindow : Window
         string browserTitle = GetForegroundBrowserTitle();
         if (string.IsNullOrEmpty(browserTitle)) return;
 
-        var newest = _config.RecentBlocked.FirstOrDefault(e => e.Kind == "Website" && e.TimestampUtc > _lastNotifiedBlockUtc);
+        // Filter out background APIs/CDNs and already-whitelisted/dismissed domains FIRST so they never shadow the real site!
+        var newest = _config.RecentBlocked.FirstOrDefault(e =>
+            e.Kind == "Website" &&
+            e.TimestampUtc > _lastNotifiedBlockUtc &&
+            !IsBackgroundApiOrCdn(e.Domain) &&
+            !SecurityHelper.IsUrlWhitelisted(e.Target, e.Domain, _config.WebsiteWhitelist) &&
+            (!_dismissedDomains.TryGetValue(e.Domain, out var until) || until <= DateTime.UtcNow));
         if (newest == null) return;
 
         _lastNotifiedBlockUtc = newest.TimestampUtc;
-        if (IsBackgroundApiOrCdn(newest.Domain)) return;
-        // ONLY pop up if the blocked domain is literally the active tab's website in the browser title!
-        if (!browserTitle.Contains(newest.Domain, StringComparison.OrdinalIgnoreCase)) return;
-        if (SecurityHelper.IsUrlWhitelisted(newest.Target, newest.Domain, _config.WebsiteWhitelist)) return;
-        if (_dismissedDomains.TryGetValue(newest.Domain, out var until) && until > DateTime.UtcNow)
-            return;
+
+        // Match if the active browser tab title shows the domain, its brand name, or a loading/blocked tab
+        string brand = newest.Domain.Split('.')[0];
+        bool titleMatches = browserTitle.Contains(newest.Domain, StringComparison.OrdinalIgnoreCase)
+            || (brand.Length >= 3 && browserTitle.Contains(brand, StringComparison.OrdinalIgnoreCase))
+            || browserTitle.Contains("New Tab", StringComparison.OrdinalIgnoreCase)
+            || browserTitle.Contains("Untitled", StringComparison.OrdinalIgnoreCase)
+            || browserTitle.Contains("can't be reached", StringComparison.OrdinalIgnoreCase)
+            || browserTitle.Contains("blocked", StringComparison.OrdinalIgnoreCase);
+        if (!titleMatches) return;
 
         _showingBlockPopup = true;
         try
