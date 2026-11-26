@@ -295,9 +295,7 @@ public partial class MainWindow : Window
         }
 
         ServiceWarningCard.Visibility = _serviceRunning ? Visibility.Collapsed : Visibility.Visible;
-        ProtectionOffBanner.Visibility = locked ? Visibility.Collapsed : Visibility.Visible;
 
-        WhitelistOnlyCheck.IsChecked = _config.WhitelistOnlyWebsites;
         HomeWebsiteProtectionCheck.IsChecked = _config.WhitelistOnlyWebsites;
         HomeWebsiteProtectionCard.BorderBrush = (Brush)FindResource(_config.WhitelistOnlyWebsites ? "GoldBrush" : "CardBorderBrush");
         bool trialExpiredLocked = _config.TrialStartedUtc.HasValue && !LicenseService.HasWebsitesAccess(_config);
@@ -616,18 +614,11 @@ public partial class MainWindow : Window
         await ToggleWebsiteProtectionAsync(turningOn);
     }
 
-    private async void WhitelistOnlyCheck_Click(object sender, RoutedEventArgs e)
-    {
-        bool turningOn = WhitelistOnlyCheck.IsChecked == true;
-        await ToggleWebsiteProtectionAsync(turningOn);
-    }
-
     private async Task ToggleWebsiteProtectionAsync(bool turningOn)
     {
         // Can switch ON while protection is ON, but CANNOT switch OFF until Protection is OFF!
         if (!turningOn && _config.IsProtectionLocked)
         {
-            WhitelistOnlyCheck.IsChecked = true;
             HomeWebsiteProtectionCheck.IsChecked = true;
             new ToggleToastDialog("Website Protection: Locked on", "Cannot be turned off while Protection is ON.") { Owner = this }.Show();
             return;
@@ -636,7 +627,6 @@ public partial class MainWindow : Window
         // If turning ON, check 7-day trial / Websites Pro license
         if (turningOn && !LicenseService.HasWebsitesAccess(_config))
         {
-            WhitelistOnlyCheck.IsChecked = false;
             HomeWebsiteProtectionCheck.IsChecked = false;
 
             if (!_config.TrialStartedUtc.HasValue && !_config.IsPremiumActive)

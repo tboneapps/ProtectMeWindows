@@ -73,14 +73,23 @@ public sealed class WhitelistProxyWorker : BackgroundService
                     string host = hostPort[0];
                     int port = hostPort.Length > 1 && int.TryParse(hostPort[1], out int p) ? p : 443;
 
-                    bool isWhitelisted = IsInternalProtectMeHost(host) || SecurityHelper.IsUrlWhitelisted(string.Empty, host, cfg.WebsiteWhitelist);
+                    bool isWhitelisted = IsInternalProtectMeHost(host)
+                        || SecurityHelper.IsUrlWhitelisted(string.Empty, host, cfg.WebsiteWhitelist)
+                        || IsCompanionCdnAllowed(host, cfg.WebsiteWhitelist);
+
+                    if (cfg.IsProtectionLocked && cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host))
+                    {
+                        string domain = SecurityHelper.NormalizeDomain(host);
+                        _state.RecordBlockedEvent("Website", $"https://{host}", domain);
+                        await SendBlockedHtmlResponseAsync(stream, $"https://{host}", domain, cfg.IsProtectionLocked, ct);
+                        return;
+                    }
 
                     if (cfg.IsProtectionLocked && !isWhitelisted)
                     {
                         bool blockByWhitelist = cfg.WhitelistOnlyWebsites && !cfg.SafeBrowsingEnabled;
                         if (blockByWhitelist ||
-                            ((cfg.SafeBrowsingEnabled || cfg.BlockPornEnabled) && IsUnsafeOrAdultHost(host)) ||
-                            (cfg.BlockImageVideoSearch && IsImageOrVideoSearchHost(host)))
+                            ((cfg.SafeBrowsingEnabled || cfg.BlockPornEnabled) && IsUnsafeOrAdultHost(host)))
                         {
                             string domain = SecurityHelper.NormalizeDomain(host);
                             _state.RecordBlockedEvent("Website", $"https://{host}", domain);
@@ -107,7 +116,17 @@ public sealed class WhitelistProxyWorker : BackgroundService
                         host = parsedUri.Host;
                     }
 
-                    bool isWhitelisted = IsInternalProtectMeHost(host) || SecurityHelper.IsUrlWhitelisted(target, host, cfg.WebsiteWhitelist);
+                    bool isWhitelisted = IsInternalProtectMeHost(host)
+                        || SecurityHelper.IsUrlWhitelisted(target, host, cfg.WebsiteWhitelist)
+                        || IsCompanionCdnAllowed(host, cfg.WebsiteWhitelist);
+
+                    if (cfg.IsProtectionLocked && cfg.BlockImageVideoSearch && IsImageOrVideoSearchUrl(host, target))
+                    {
+                        string domain = SecurityHelper.NormalizeDomain(host);
+                        _state.RecordBlockedEvent("Website", target, domain);
+                        await SendBlockedHtmlResponseAsync(stream, target, domain, cfg.IsProtectionLocked, ct);
+                        return;
+                    }
 
                     // Whitelisted websites are NEVER affected by image/video/download/search limitations
                     if (cfg.IsProtectionLocked && !isWhitelisted)
@@ -175,6 +194,55 @@ public sealed class WhitelistProxyWorker : BackgroundService
                 // Connection reset / client closed
             }
         }
+    }
+
+    private static bool IsCompanionCdnAllowed(string host, List<WhitelistEntry> whitelist)
+    {
+        if (string.IsNullOrWhiteSpace(host) || whitelist.Count == 0) return false;
+        string d = host.Split(':')[0].ToLowerInvariant();
+        bool HasSite(string site) => whitelist.Any(w => w.Scope == WhitelistScope.WholeWebsite &&
+            SecurityHelper.NormalizeDomain(w.Value).Equals(site, StringComparison.OrdinalIgnoreCase));
+        bool HasBrand(string brand) => whitelist.Any(w => w.Scope == WhitelistScope.WholeWebsite &&
+            (SecurityHelper.NormalizeDomain(w.Value).StartsWith(brand + ".", StringComparison.OrdinalIgnoreCase)
+             || SecurityHelper.NormalizeDomain(w.Value).Contains("." + brand + ".", StringComparison.OrdinalIgnoreCase)));
+
+        // Google (all countries/languages: google.com, google.co.uk, google.fr, etc.)
+        if ((d == "gstatic.com" || d.EndsWith(".gstatic.com") || d == "googleusercontent.com" || d.EndsWith(".googleusercontent.com")) && HasBrand("google"))
+            return true;
+
+        // Bing (all regions)
+        if ((d == "bing.net" || d.EndsWith(".bing.net")) && HasBrand("bing"))
+            return true;
+
+        // Yahoo (all countries/languages: yahoo.com, uk.yahoo.com, yahoo.co.jp, etc.)
+        if ((d == "yimg.com" || d.EndsWith(".yimg.com")) && HasBrand("yahoo"))
+            return true;
+
+        // Brave Search
+        if ((d == "imgs.search.brave.com" || d.EndsWith(".brave.com")) && HasBrand("brave"))
+            return true;
+
+        // DuckDuckGo
+        if ((d == "duckduckgo.com" || d.EndsWith(".duckduckgo.com")) && HasBrand("duckduckgo"))
+            return true;
+
+        // Yandex (all languages/TLDs)
+        if ((d == "yastatic.net" || d.EndsWith(".yastatic.net") || d == "yandex.net" || d.EndsWith(".yandex.net")) && HasBrand("yandex"))
+            return true;
+
+        // Baidu
+        if ((d == "bdstatic.com" || d.EndsWith(".bdstatic.com") || d == "bcebos.com" || d.EndsWith(".bcebos.com")) && HasBrand("baidu"))
+            return true;
+
+        // YouTube thumbnails & avatars when youtube.com is whitelisted
+        if ((d == "ytimg.com" || d.EndsWith(".ytimg.com") || d == "ggpht.com" || d.EndsWith(".ggpht.com") || d == "googlevideo.com" || d.EndsWith(".googlevideo.com")) && HasSite("youtube.com"))
+            return true;
+
+        // JW.org media CDN when jw.org is whitelisted
+        if ((d == "jw-cdn.org" || d.EndsWith(".jw-cdn.org")) && HasSite("jw.org"))
+            return true;
+
+        return false;
     }
 
     private static bool IsInternalProtectMeHost(string host)
