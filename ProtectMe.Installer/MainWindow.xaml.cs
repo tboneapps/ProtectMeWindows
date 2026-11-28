@@ -18,7 +18,16 @@ public partial class MainWindow : Window
         _autoMode = Environment.GetCommandLineArgs().Any(a => a.Equals("--auto", StringComparison.OrdinalIgnoreCase));
         if (_autoMode)
         {
-            Loaded += (_, _) => ActionButton_Click(this, new RoutedEventArgs());
+            ShowInTaskbar = false;
+            Opacity = 0;
+            Width = 1;
+            Height = 1;
+            ActionButton.Visibility = Visibility.Collapsed;
+            Loaded += (_, _) =>
+            {
+                Hide();
+                ActionButton_Click(this, new RoutedEventArgs());
+            };
         }
     }
 

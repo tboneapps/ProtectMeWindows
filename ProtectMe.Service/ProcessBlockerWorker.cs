@@ -270,41 +270,20 @@ public sealed class ProcessBlockerWorker : BackgroundService
                 key.SetValue("ForceGoogleSafeSearch", (safeOn || pornOn) ? 1 : 0, RegistryValueKind.DWord);
                 key.SetValue("ForceYouTubeRestrict", (safeOn || pornOn) ? 2 : 0, RegistryValueKind.DWord);
 
-                // 2. Block ALL images on non-whitelisted websites (DefaultImagesSetting = 2)
-                //    and allow images on whitelisted websites (ImagesAllowedForUrls)
-                key.SetValue("DefaultImagesSetting", safeOn ? 2 : 1, RegistryValueKind.DWord);
+                // 2. Keep DefaultImagesSetting = 1 so turning Protection OFF restores images instantaneously;
+                //    ProtectMe Companion extension handles instant black-boxing when Safe Browsing is ON!
+                key.SetValue("DefaultImagesSetting", 1, RegistryValueKind.DWord);
                 key.DeleteSubKeyTree("ImagesAllowedForUrls", throwOnMissingSubKey: false);
-                if (safeOn && cfg.WebsiteWhitelist.Count > 0)
-                {
-                    using var allowImgKey = key.CreateSubKey("ImagesAllowedForUrls", writable: true);
-                    if (allowImgKey != null)
-                    {
-                        int idx = 1;
-                        foreach (var w in cfg.WebsiteWhitelist)
-                        {
-                            string dom = SecurityHelper.NormalizeDomain(w.Value);
-                            if (!string.IsNullOrWhiteSpace(dom))
-                            {
-                                allowImgKey.SetValue(idx++.ToString(), $"https://[*.]{dom}", RegistryValueKind.String);
-                                allowImgKey.SetValue(idx++.ToString(), $"http://[*.]{dom}", RegistryValueKind.String);
-                                if (dom.Equals("jw.org", StringComparison.OrdinalIgnoreCase))
-                                    allowImgKey.SetValue(idx++.ToString(), "https://[*.]jw-cdn.org", RegistryValueKind.String);
-                            }
-                        }
-                    }
-                }
 
                 // 3. Block ALL file downloads in Brave/Chrome/Edge (DownloadRestrictions = 3)
                 key.SetValue("DownloadRestrictions", safeOn ? 3 : 0, RegistryValueKind.DWord);
                 // Ensure browser reloads policies cleanly on restart (don't stay stuck in background)
                 key.SetValue("BackgroundModeEnabled", 0, RegistryValueKind.DWord);
 
-                // 4. Auto-install & lock ProtectMe Companion Extension when Safe Browsing is ON
-                //    (renders images & videos as clean solid black boxes — zero clicks for customer)
+                // 4. Always keep ProtectMe Companion Extension installed & ready for instant ON/OFF sync
                 key.DeleteSubKeyTree("ExtensionInstallForcelist", throwOnMissingSubKey: false);
-                if (safeOn)
+                using (var extKey = key.CreateSubKey("ExtensionInstallForcelist", writable: true))
                 {
-                    using var extKey = key.CreateSubKey("ExtensionInstallForcelist", writable: true);
                     extKey?.SetValue("1", "kalbgbihhjjlejdfejimdkiemfaijobi;https://clients2.google.com/service/update2/crx", RegistryValueKind.String);
                 }
 

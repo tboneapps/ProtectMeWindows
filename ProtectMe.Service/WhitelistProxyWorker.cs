@@ -58,7 +58,28 @@ public sealed class WhitelistProxyWorker : BackgroundService
                 string method = requestLine[0].ToUpperInvariant();
                 string target = requestLine[1];
 
-                // Handle local ProtectMe Block Page API (Allow Whole Website / Allow Webpage)
+                // Handle local ProtectMe Extension / Block Page APIs
+                if (method == "OPTIONS" && target.StartsWith("/api/", StringComparison.OrdinalIgnoreCase))
+                {
+                    await WriteCorsPreflightAsync(stream, ct);
+                    return;
+                }
+                if (method == "GET" && target.StartsWith("/api/status", StringComparison.OrdinalIgnoreCase))
+                {
+                    var liveCfg = _state.Current;
+                    var payload = System.Text.Json.JsonSerializer.Serialize(new
+                    {
+                        locked = liveCfg.IsProtectionLocked,
+                        safeBrowsing = liveCfg.SafeBrowsingEnabled,
+                        whitelistOnly = liveCfg.WhitelistOnlyWebsites,
+                        blockPorn = liveCfg.BlockPornEnabled,
+                        blockImageVideo = liveCfg.BlockImageVideoSearch,
+                        hasPassword = liveCfg.HasPassword,
+                        whitelist = liveCfg.WebsiteWhitelist.Select(w => new { value = w.Value, scope = w.Scope.ToString() })
+                    });
+                    await WriteJsonResponseAsync(stream, 200, payload, ct);
+                    return;
+                }
                 if (method == "POST" && target.StartsWith("/api/whitelist", StringComparison.OrdinalIgnoreCase))
                 {
                     await HandleWhitelistApiAsync(stream, lines, ct);
@@ -471,6 +492,17 @@ async function allowSite(scope) {{
             ".torrent", ".bat", ".ps1", ".cmd", ".vbs", ".jar", ".dll"
         };
         return exts.Any(e => path.EndsWith(e, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static async Task WriteCorsPreflightAsync(NetworkStream stream, CancellationToken ct)
+    {
+        string resp = "HTTP/1.1 204 No Content\r\n" +
+                      "Access-Control-Allow-Origin: *\r\n" +
+                      "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n" +
+                      "Access-Control-Allow-Headers: Content-Type\r\n" +
+                      "Access-Control-Allow-Private-Network: true\r\n" +
+                      "Connection: close\r\n\r\n";
+        await stream.WriteAsync(Encoding.ASCII.GetBytes(resp), ct);
     }
 
     private static string ExtractHostHeader(string[] lines)

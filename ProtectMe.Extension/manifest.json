@@ -1,10 +1,16 @@
 {
   "manifest_version": 3,
   "name": "ProtectMe Companion",
-  "version": "1.0.0",
-  "description": "Renders blocked images and videos as clean solid black boxes when ProtectMe Safe Browsing is active.",
+  "version": "1.1.0",
+  "description": "Instant Safe Browsing and in-tab Website Protection sync for ProtectMe on Windows.",
   "icons": {
     "128": "icon.png"
+  },
+  "host_permissions": [
+    "http://127.0.0.1:8787/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {

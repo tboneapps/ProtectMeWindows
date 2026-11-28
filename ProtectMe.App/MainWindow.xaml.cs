@@ -133,7 +133,10 @@ public partial class MainWindow : Window
                 double leftMb = Math.Max(0, totalMb - dlMb);
                 double pct = (p.Downloaded * 100.0) / p.Total;
                 UpdateProgressBar.Value = pct;
-                UpdateProgressText.Text = $"{dlMb:F1} MB / {totalMb:F1} MB ({pct:F0}%) · {leftMb:F1} MB left";
+                UpdateProgressText.Text = pct >= 99.5
+                    ? "Installing update..."
+                    : $"{dlMb:F1} MB / {totalMb:F1} MB ({pct:F0}%) · {leftMb:F1} MB left";
+                if (pct >= 99.5) UpdateNowBtn.Content = "Installing...";
             }
             else
             {
