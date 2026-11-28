@@ -198,7 +198,9 @@ public partial class MainWindow : Window
             GetWindowThreadProcessId(hwnd, out uint pid);
             using var proc = System.Diagnostics.Process.GetProcessById((int)pid);
             string name = proc.ProcessName.ToLowerInvariant();
-            if (name is not ("brave" or "chrome" or "msedge" or "firefox" or "opera" or "vivaldi"))
+            // Floating popup fallback is ONLY for browsers without ProtectMe Companion extension (Firefox, LibreWolf, Waterfox).
+            // Chromium browsers (Brave, Chrome, Edge, Opera, Vivaldi) use the in-tab ProtectMe Companion block screen.
+            if (name is not ("firefox" or "librewolf" or "waterfox"))
                 return string.Empty;
 
             var sb = new System.Text.StringBuilder(512);
